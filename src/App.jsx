@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Route, Routes, useNavigate } from "react-route
 import { useEffect } from "react";
 import Home from "./pages/Home";
 import ErrorPage from "./error/ErrorPage";
+import GithubLogin from "./components/GithubLogin";
 
 function ProtectedRoute({ children }) {
     const navigate = useNavigate();
@@ -23,7 +24,7 @@ function App() {
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<GithubLogin />} />
                 <Route path="/error" element={<ErrorPage />} />
                 <Route path="/protected" element={
                     <ProtectedRoute>
