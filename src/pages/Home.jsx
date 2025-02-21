@@ -10,10 +10,14 @@ const Home = () => {
                 return response.json();
             })
             .then((data) => {
-                setUser(data.login);  // GitHub ID만 저장
+                if (data.login) {
+                    setUser(data.login);  // 로그인된 경우 GitHub ID 저장
+                } else {
+                    setUser(null);  // 로그인되지 않은 경우 null 처리
+                }
             })
             .catch(() => {
-                setUser(null);
+                setUser(null);  // 에러 발생 시 null 처리
             });
     }, []);
 
@@ -23,7 +27,15 @@ const Home = () => {
     };
 
     return (
-        <div>
+        <div style={{
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100vh",
+            textAlign: "center"
+        }}>
             <h1>GitHub OAuth2 로그인 테스트</h1>
             {user ? (
                 <>
@@ -31,8 +43,8 @@ const Home = () => {
                     <button onClick={handleLogout}>로그아웃</button>
                 </>
             ) : (
-                <button onClick={() => window.location.href = "/oauth2/authorization/github"}>
-                  GitHub 로그인
+                <button onClick={() => window.location.href = "http://localhost:8090/oauth2/authorization/github"}>
+                    GitHub 로그인
                 </button>
             )}
         </div>
