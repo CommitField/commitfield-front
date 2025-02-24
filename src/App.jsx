@@ -25,6 +25,7 @@ function App() {
         <Router>
             <Routes>
                 <Route path="/" element={<GithubLogin />} />
+                <Route path="/home" element={<Home />} />
                 <Route path="/error" element={<ErrorPage />} />
                 <Route path="/protected" element={
                     <ProtectedRoute>

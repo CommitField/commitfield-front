@@ -17,6 +17,7 @@ const GithubLogin = () => {
       if (response.ok) {
         const data = await response.json();
         setUser(data);
+        window.location.href = "/home"; // 로그아웃 후 메인 페이지로 이동
       }
     } catch (error) {
       console.error('Error checking login status:', error);
@@ -29,18 +30,6 @@ const GithubLogin = () => {
     window.location.href = 'http://localhost:8090/oauth2/authorization/github';
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/logout', {
-        method: 'GET',
-        credentials: 'include'
-      });
-      setUser(null);
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Error during logout:', error);
-    }
-  };
 
   if (loading) {
     return <div className="flex justify-center items-center">Loading...</div>;
