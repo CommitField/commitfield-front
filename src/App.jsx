@@ -1,7 +1,9 @@
 import { BrowserRouter as Router, Route, Routes, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import Home from "./pages/Home";
+import CommitTracker from "./pages/CommitTracker";
 import ErrorPage from "./error/ErrorPage";
+import TestAPI from "./pages/TestAPI";
 import GithubLogin from "./components/GithubLogin";
 
 function ProtectedRoute({ children }) {
@@ -27,6 +29,8 @@ function App() {
                 <Route path="/" element={<GithubLogin />} />
                 <Route path="/home" element={<Home />} />
                 <Route path="/error" element={<ErrorPage />} />
+                <Route path="/commit" element={<CommitTracker />} />
+                <Route path="/testapi" element={<TestAPI />} />
                 <Route path="/protected" element={
                     <ProtectedRoute>
                         <div>보호된 페이지</div>
