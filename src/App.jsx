@@ -5,6 +5,7 @@ import CommitTracker from "./pages/CommitTracker";
 import ErrorPage from "./error/ErrorPage";
 import TestAPI from "./pages/TestAPI";
 import GithubLogin from "./components/GithubLogin";
+import CommitInfo from "./pages/commit/CommitInfo"; // 경로 수정
 
 function ProtectedRoute({ children }) {
     const navigate = useNavigate();
@@ -30,6 +31,7 @@ function App() {
                 <Route path="/home" element={<Home />} />
                 <Route path="/error" element={<ErrorPage />} />
                 <Route path="/commit" element={<CommitTracker />} />
+                <Route path="/commit-info" element={<CommitInfo />} /> {/* 커밋 정보 페이지 */}
                 <Route path="/testapi" element={<TestAPI />} />
                 <Route path="/protected" element={
                     <ProtectedRoute>
