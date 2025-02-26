@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    global: 'globalThis'  // global을 globalThis로 정의
+  },
   server: {
     proxy: {
       '/api': {
