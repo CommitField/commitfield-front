@@ -1,0 +1,250 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { CalendarDays, GitBranch, Award, Leaf, Sun, Wind, Snowflake } from 'lucide-react';
+
+const CommitInfo = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [totalCommitData, setTotalCommitData] = useState(null);
+  const [seasonData, setSeasonData] = useState({
+    spring: null,
+    summer: null,
+    fall: null,
+    winter: null
+  });
+
+  useEffect(() => {
+    const fetchCommitData = async () => {
+      try {
+        // Fetch total commit data
+        const totalResponse = await fetch('/api/commits', {
+          credentials: 'include'
+        });
+        
+        if (!totalResponse.ok) {
+          throw new Error('전체 커밋 데이터를 가져오는데 실패했습니다');
+        }
+        
+        const totalData = await totalResponse.json();
+        setTotalCommitData(totalData);
+        
+        // Fetch season-specific data
+        const seasons = ['spring', 'summer', 'fall', 'winter'];
+        const seasonResponses = await Promise.all(
+          seasons.map(season => 
+            fetch(`/api/commits/${season}`, {
+              credentials: 'include'
+            })
+          )
+        );
+        
+        const seasonDataResults = await Promise.all(
+          seasonResponses.map(response => {
+            if (!response.ok) {
+              throw new Error(`시즌 데이터를 가져오는데 실패했습니다: ${response.status}`);
+            }
+            return response.json();
+          })
+        );
+        
+        setSeasonData({
+          spring: seasonDataResults[0],
+          summer: seasonDataResults[1],
+          fall: seasonDataResults[2],
+          winter: seasonDataResults[3]
+        });
+        
+        setLoading(false);
+      } catch (err) {
+        console.error('커밋 데이터 가져오기 오류:', err);
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchCommitData();
+  }, []);
+
+  const handleReturnHome = () => {
+    navigate('/home');
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-700">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center p-6 bg-red-50 rounded-lg shadow">
+          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <h2 className="text-xl font-bold text-red-700 mb-2">데이터 로딩 오류</h2>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <button 
+            onClick={handleReturnHome}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
+          >
+            홈으로 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate total contributions (public + private)
+  const totalContributions = totalCommitData ? 
+    totalCommitData.totalCommitContributions + totalCommitData.restrictedContributionsCount : 0;
+
+  // Get season name in Korean
+  const getSeasonName = (season) => {
+    switch (season) {
+      case 'spring': return '봄';
+      case 'summer': return '여름';
+      case 'fall': return '가을';
+      case 'winter': return '겨울';
+      default: return season;
+    }
+  };
+
+  // Get season icon and color
+  const getSeasonIcon = (season) => {
+    switch (season) {
+      case 'spring': return <Leaf className="w-5 h-5 text-green-500" />;
+      case 'summer': return <Sun className="w-5 h-5 text-yellow-500" />;
+      case 'fall': return <Wind className="w-5 h-5 text-orange-500" />;
+      case 'winter': return <Snowflake className="w-5 h-5 text-blue-500" />;
+      default: return <GitBranch className="w-5 h-5 text-gray-500" />;
+    }
+  };
+
+  // Get season header background color
+  const getSeasonHeaderColor = (season) => {
+    switch (season) {
+      case 'spring': return 'bg-green-100';
+      case 'summer': return 'bg-yellow-100';
+      case 'fall': return 'bg-orange-100';
+      case 'winter': return 'bg-blue-100';
+      default: return 'bg-gray-100';
+    }
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">내 커밋 기록</h1>
+        <button 
+          onClick={handleReturnHome}
+          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
+        >
+          홈으로 돌아가기
+        </button>
+      </div>
+
+      {/* Total Commit Summary */}
+      <div className="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
+        <table className="min-w-full">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="py-3 px-4 text-center font-medium text-gray-700 border-b">총 커밋 수</th>
+              <th className="py-3 px-4 text-center font-medium text-gray-700 border-b">공개</th>
+              <th className="py-3 px-4 text-center font-medium text-gray-700 border-b">비공개</th>
+              <th className="py-3 px-4 text-center font-medium text-gray-700 border-b">현재 연속</th>
+              <th className="py-3 px-4 text-center font-medium text-gray-700 border-b">최장 연속</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="py-4 px-4 text-center border-b">
+                <div className="text-2xl font-bold">{totalContributions.toLocaleString()}</div>
+              </td>
+              <td className="py-4 px-4 text-center border-b">
+                <div className="text-lg">{totalCommitData?.totalCommitContributions.toLocaleString()}</div>
+              </td>
+              <td className="py-4 px-4 text-center border-b">
+                <div className="text-lg">{totalCommitData?.restrictedContributionsCount.toLocaleString()}</div>
+              </td>
+              <td className="py-4 px-4 text-center border-b">
+                <div className="text-lg font-medium">
+                  <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full">
+                    {totalCommitData?.currentStreakDays} 일
+                  </span>
+                </div>
+              </td>
+              <td className="py-4 px-4 text-center border-b">
+                <div className="text-lg font-medium">
+                  <span className="inline-block px-3 py-1 bg-purple-100 text-purple-800 rounded-full">
+                    {totalCommitData?.maxStreakDays} 일
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Season Table */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <table className="min-w-full">
+          <thead>
+            <tr>
+              <th className="py-3 px-4 bg-gray-100 text-left font-medium text-gray-700 border-b">시즌</th>
+              <th className="py-3 px-4 bg-gray-100 text-center font-medium text-gray-700 border-b">총 커밋</th>
+              <th className="py-3 px-4 bg-gray-100 text-center font-medium text-gray-700 border-b">공개 커밋</th>
+              <th className="py-3 px-4 bg-gray-100 text-center font-medium text-gray-700 border-b">비공개 커밋</th>
+              <th className="py-3 px-4 bg-gray-100 text-center font-medium text-gray-700 border-b">현재 연속</th>
+              <th className="py-3 px-4 bg-gray-100 text-center font-medium text-gray-700 border-b">최장 연속</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(seasonData).map(([season, data], index) => {
+              if (!data) return null;
+              
+              const totalSeasonContributions = data.totalCommitContributions + data.restrictedContributionsCount;
+              const headerColor = getSeasonHeaderColor(season);
+              
+              return (
+                <tr key={season} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className={`py-4 px-4 border-b ${headerColor} font-medium`}>
+                    <div className="flex items-center">
+                      {getSeasonIcon(season)}
+                      <span className="ml-2">{getSeasonName(season)} 시즌</span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4 text-center border-b font-bold">
+                    {totalSeasonContributions}
+                  </td>
+                  <td className="py-4 px-4 text-center border-b">
+                    {data.totalCommitContributions}
+                  </td>
+                  <td className="py-4 px-4 text-center border-b">
+                    {data.restrictedContributionsCount}
+                  </td>
+                  <td className="py-4 px-4 text-center border-b">
+                    <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full">
+                      {data.currentStreakDays}일
+                    </span>
+                  </td>
+                  <td className="py-4 px-4 text-center border-b">
+                    <span className="inline-block px-3 py-1 bg-purple-100 text-purple-800 rounded-full">
+                      {data.maxStreakDays}일
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export default CommitInfo;
