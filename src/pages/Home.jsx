@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CalendarDays, GitBranch, Award, Leaf, Sun, Wind, Snowflake } from 'lucide-react';
+import { Leaf, Sun, Wind, Snowflake } from 'lucide-react';
+import './CommitStats.css'; // CSS 파일 임포트
 
 const Home = () => {
   const [user, setUser] = useState(null);
@@ -85,10 +86,10 @@ const Home = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-700">로딩 중...</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div className="loading-spinner"></div>
+          <p>로딩 중...</p>
         </div>
       </div>
     );
@@ -96,11 +97,11 @@ const Home = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center p-6 bg-red-50 rounded-lg shadow">
-          <div className="text-red-500 text-4xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-red-700 mb-2">데이터 로딩 오류</h2>
-          <p className="text-gray-700 mb-4">{error}</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div style={{ textAlign: 'center', padding: '24px', backgroundColor: '#fef2f2', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
+          <div style={{ color: '#ef4444', fontSize: '32px', marginBottom: '16px' }}>⚠️</div>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#b91c1c', marginBottom: '8px' }}>데이터 로딩 오류</h2>
+          <p style={{ color: '#374151', marginBottom: '16px' }}>{error}</p>
         </div>
       </div>
     );
@@ -124,34 +125,33 @@ const Home = () => {
   // Get season icon and color
   const getSeasonIcon = (season) => {
     switch (season) {
-      case 'spring': return <Leaf className="w-5 h-5 text-green-500" />;
-      case 'summer': return <Sun className="w-5 h-5 text-yellow-500" />;
-      case 'fall': return <Wind className="w-5 h-5 text-orange-500" />;
-      case 'winter': return <Snowflake className="w-5 h-5 text-blue-500" />;
-      default: return <GitBranch className="w-5 h-5 text-gray-500" />;
+      case 'spring': return <Leaf className="season-icon" style={{ color: '#10b981' }} />;
+      case 'summer': return <Sun className="season-icon" style={{ color: '#f59e0b' }} />;
+      case 'fall': return <Wind className="season-icon" style={{ color: '#f97316' }} />;
+      case 'winter': return <Snowflake className="season-icon" style={{ color: '#3b82f6' }} />;
+      default: return null;
     }
   };
 
   // Get season header background color
   const getSeasonHeaderColor = (season) => {
     switch (season) {
-      case 'spring': return 'bg-green-100';
-      case 'summer': return 'bg-yellow-100';
-      case 'fall': return 'bg-orange-100';
-      case 'winter': return 'bg-blue-100';
-      default: return 'bg-gray-100';
+      case 'spring': return '#ecfdf5';
+      case 'summer': return '#fffbeb';
+      case 'fall': return '#fff7ed';
+      case 'winter': return '#eff6ff';
+      default: return '#f9fafb';
     }
   };
 
   return (
-    <div className="w-full min-h-screen p-4 bg-white">
-      <div className="p-4 bg-gray-900 text-white">
+    <div style={{ width: '100%', minHeight: '100vh', padding: '16px', backgroundColor: 'white' }}>
+      <div style={{ padding: '16px', backgroundColor: '#111827', color: 'white' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span className="text-2xl font-bold">CommitField</span>
+          <span style={{ fontSize: '24px', fontWeight: 'bold' }}>CommitField</span>
           <button
             onClick={handleLogout}
-            className="bg-black rounded-md px-4 py-2"
-            style={{ border: 'none' }}
+            style={{ backgroundColor: 'black', borderRadius: '6px', padding: '8px 16px', border: 'none' }}
           >
             로그아웃
           </button>
@@ -159,48 +159,65 @@ const Home = () => {
       </div>
 
       {/* CommitInfo content integrated here */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-6">내 커밋 기록</h2>
+      <div style={{ marginTop: '32px' }}>
+        <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px' }}>내 커밋 기록</h2>
 
-        {/* 커밋 통계 */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6 w-full">
-          <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
-            {/* 총 커밋 수 - 왼쪽 */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '33%' }}>
-              <div className="text-4xl font-bold mb-1">{totalContributions.toLocaleString()}</div>
-              <div className="text-gray-600 font-medium">Total Contributions</div>
-              <div className="text-sm text-gray-400 mt-1">전체 기간</div>
+        {/* 커밋 통계 - CSS 클래스 사용 */}
+        <div className="stats-container">
+          <div className="stats-row">
+            {/* 총 커밋 수 */}
+            <div className="stat-column">
+              <div className="stat-value">
+                {totalContributions.toLocaleString()}
+              </div>
+              <div className="stat-label">Total Contributions</div>
+              <div className="stat-sublabel">전체 기간</div>
             </div>
-
-            {/* 현재 연속 - 가운데 */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '33%' }}>
-              <div className="text-4xl font-bold mb-1">{totalCommitData?.currentStreakDays}</div>
-              <div className="text-gray-600 font-medium">Current Streak</div>
-              <div className="text-sm text-gray-400 mt-1">최근 {totalCommitData?.currentStreakDays}일 연속</div>
+            
+            {/* 구분선 */}
+            <div className="divider"></div>
+            
+            {/* 현재 연속 */}
+            <div className="stat-column">
+              <div className="stat-value current-streak">
+                {totalCommitData?.currentStreakDays}
+              </div>
+              <div className="stat-label current-streak-label">Current Streak</div>
+              <div className="stat-sublabel">최근 {totalCommitData?.currentStreakDays}일 연속</div>
             </div>
-
-            {/* 최장 연속 - 오른쪽 */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '33%' }}>
-              <div className="text-4xl font-bold mb-1">{totalCommitData?.maxStreakDays}</div>
-              <div className="text-gray-600 font-medium">Longest Streak</div>
-              <div className="text-sm text-gray-400 mt-1">역대 최장 기록</div>
+            
+            {/* 구분선 */}
+            <div className="divider"></div>
+            
+            {/* 최장 연속 */}
+            <div className="stat-column">
+              <div className="stat-value">
+                {totalCommitData?.maxStreakDays}
+              </div>
+              <div className="stat-label">Longest Streak</div>
+              <div className="stat-sublabel">역대 최장 기록</div>
             </div>
           </div>
 
-          <div className="text-xs text-gray-400 mt-6 text-center">* 매일 자정(KST) 기준으로 업데이트됩니다</div>
+          <div className="footer">
+            <div className="footer-text">
+              <span className="footer-icon">⏱️</span>
+              매일 자정(KST) 기준으로 업데이트됩니다
+            </div>
+          </div>
         </div>
 
         {/* Season Table */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <table className="min-w-full">
+        <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th className="py-3 px-4 bg-gray-100 text-left font-medium text-gray-700 border-b">시즌</th>
-                <th className="py-3 px-4 bg-gray-100 text-center font-medium text-gray-700 border-b">총 커밋</th>
-                <th className="py-3 px-4 bg-gray-100 text-center font-medium text-gray-700 border-b">공개 커밋</th>
-                <th className="py-3 px-4 bg-gray-100 text-center font-medium text-gray-700 border-b">비공개 커밋</th>
-                <th className="py-3 px-4 bg-gray-100 text-center font-medium text-gray-700 border-b">현재 연속</th>
-                <th className="py-3 px-4 bg-gray-100 text-center font-medium text-gray-700 border-b">최장 연속</th>
+                <th style={{ padding: '12px 16px', backgroundColor: '#f3f4f6', textAlign: 'left', fontWeight: '500', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>시즌</th>
+                <th style={{ padding: '12px 16px', backgroundColor: '#f3f4f6', textAlign: 'center', fontWeight: '500', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>총 커밋</th>
+                <th style={{ padding: '12px 16px', backgroundColor: '#f3f4f6', textAlign: 'center', fontWeight: '500', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>공개 커밋</th>
+                <th style={{ padding: '12px 16px', backgroundColor: '#f3f4f6', textAlign: 'center', fontWeight: '500', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>비공개 커밋</th>
+                <th style={{ padding: '12px 16px', backgroundColor: '#f3f4f6', textAlign: 'center', fontWeight: '500', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>현재 연속</th>
+                <th style={{ padding: '12px 16px', backgroundColor: '#f3f4f6', textAlign: 'center', fontWeight: '500', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>최장 연속</th>
               </tr>
             </thead>
             <tbody>
@@ -208,32 +225,44 @@ const Home = () => {
                 if (!data) return null;
 
                 const totalSeasonContributions = data.totalCommitContributions + data.restrictedContributionsCount;
-                const headerColor = getSeasonHeaderColor(season);
+                const headerBgColor = getSeasonHeaderColor(season);
 
                 return (
-                  <tr key={season} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className={`py-4 px-4 border-b ${headerColor} font-medium`}>
-                      <div className="flex items-center">
+                  <tr key={season} style={{ backgroundColor: index % 2 === 0 ? 'white' : '#f9fafb' }}>
+                    <td style={{ padding: '16px', borderBottom: '1px solid #e5e7eb', backgroundColor: headerBgColor, fontWeight: '500' }}>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
                         {getSeasonIcon(season)}
-                        <span className="ml-2">{getSeasonName(season)} 시즌</span>
+                        <span style={{ marginLeft: '8px' }}>{getSeasonName(season)} 시즌</span>
                       </div>
                     </td>
-                    <td className="py-4 px-4 text-center border-b font-bold">
+                    <td style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid #e5e7eb', fontWeight: 'bold' }}>
                       {totalSeasonContributions}
                     </td>
-                    <td className="py-4 px-4 text-center border-b">
+                    <td style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>
                       {data.totalCommitContributions}
                     </td>
-                    <td className="py-4 px-4 text-center border-b">
+                    <td style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>
                       {data.restrictedContributionsCount}
                     </td>
-                    <td className="py-4 px-4 text-center border-b">
-                      <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full">
+                    <td style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>
+                      <span style={{ 
+                        display: 'inline-block', 
+                        padding: '4px 12px', 
+                        backgroundColor: '#dcfce7', 
+                        color: '#166534', 
+                        borderRadius: '9999px' 
+                      }}>
                         {data.currentStreakDays}일
                       </span>
                     </td>
-                    <td className="py-4 px-4 text-center border-b">
-                      <span className="inline-block px-3 py-1 bg-purple-100 text-purple-800 rounded-full">
+                    <td style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>
+                      <span style={{ 
+                        display: 'inline-block', 
+                        padding: '4px 12px', 
+                        backgroundColor: '#f3e8ff', 
+                        color: '#6b21a8', 
+                        borderRadius: '9999px' 
+                      }}>
                         {data.maxStreakDays}일
                       </span>
                     </td>
