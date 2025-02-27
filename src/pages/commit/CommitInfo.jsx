@@ -137,8 +137,8 @@ const CommitInfo = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="max-w-5xl mx-auto p-6 w-full" style={{ display: 'block' }}>
+      <div className="flex justify-between items-center mb-6 w-full">
         <h1 className="text-2xl font-bold">내 커밋 기록</h1>
         <button 
           onClick={handleReturnHome}
@@ -148,49 +148,35 @@ const CommitInfo = () => {
         </button>
       </div>
 
-      {/* Total Commit Summary */}
-      <div className="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
-        <table className="min-w-full">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="py-3 px-4 text-center font-medium text-gray-700 border-b">총 커밋 수</th>
-              <th className="py-3 px-4 text-center font-medium text-gray-700 border-b">공개</th>
-              <th className="py-3 px-4 text-center font-medium text-gray-700 border-b">비공개</th>
-              <th className="py-3 px-4 text-center font-medium text-gray-700 border-b">현재 연속</th>
-              <th className="py-3 px-4 text-center font-medium text-gray-700 border-b">최장 연속</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="py-4 px-4 text-center border-b">
-                <div className="text-2xl font-bold">{totalContributions.toLocaleString()}</div>
-              </td>
-              <td className="py-4 px-4 text-center border-b">
-                <div className="text-lg">{totalCommitData?.totalCommitContributions.toLocaleString()}</div>
-              </td>
-              <td className="py-4 px-4 text-center border-b">
-                <div className="text-lg">{totalCommitData?.restrictedContributionsCount.toLocaleString()}</div>
-              </td>
-              <td className="py-4 px-4 text-center border-b">
-                <div className="text-lg font-medium">
-                  <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full">
-                    {totalCommitData?.currentStreakDays} 일
-                  </span>
-                </div>
-              </td>
-              <td className="py-4 px-4 text-center border-b">
-                <div className="text-lg font-medium">
-                  <span className="inline-block px-3 py-1 bg-purple-100 text-purple-800 rounded-full">
-                    {totalCommitData?.maxStreakDays} 일
-                  </span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      {/* 새로운 디자인의 커밋 통계 */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6 w-full">
+        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
+          {/* 총 커밋 수 - 왼쪽 */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '33%' }}>
+            <div className="text-4xl font-bold mb-1">{totalContributions.toLocaleString()}</div>
+            <div className="text-gray-600 font-medium">Total Contributions</div>
+            <div className="text-sm text-gray-400 mt-1">전체 기간</div>
+          </div>
+          
+          {/* 현재 연속 - 가운데 */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '33%' }}>
+            <div className="text-4xl font-bold mb-1">{totalCommitData?.currentStreakDays}</div>
+            <div className="text-gray-600 font-medium">Current Streak</div>
+            <div className="text-sm text-gray-400 mt-1">최근 {totalCommitData?.currentStreakDays}일 연속</div>
+          </div>
+          
+          {/* 최장 연속 - 오른쪽 */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '33%' }}>
+            <div className="text-4xl font-bold mb-1">{totalCommitData?.maxStreakDays}</div>
+            <div className="text-gray-600 font-medium">Longest Streak</div>
+            <div className="text-sm text-gray-400 mt-1">역대 최장 기록</div>
+          </div>
+        </div>
+        
+        <div className="text-xs text-gray-400 mt-6 text-center">* 매일 자정(KST) 기준으로 업데이트됩니다</div>
       </div>
 
-      {/* Season Table */}
+      {/* Season Table (기존 코드 유지) */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <table className="min-w-full">
           <thead>
