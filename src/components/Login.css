@@ -1,0 +1,78 @@
+/* Login.css */
+.login-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: #f5f5f5;
+  }
+  
+  .login-card {
+    background-color: white;
+    border-radius: 24px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    padding: 48px;
+    width: 360px;
+    max-width: 90%;
+    text-align: center;
+    border: 1px solid #e0e0e0;
+  }
+  
+  .login-title {
+    color: #3fb27f;
+    font-size: 36px;
+    font-weight: bold;
+    margin-bottom: 32px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  .github-button {
+    background-color: #3fb27f;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    transition: all 0.2s ease;
+  }
+  
+  .github-button:hover {
+    background-color: #35a070;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(63, 178, 127, 0.3);
+  }
+  
+  .github-icon {
+    margin-right: 10px;
+  }
+  
+  .loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 18px;
+    color: #3fb27f;
+  }
+  
+  /* Dark theme */
+  .dark-theme {
+    background-color: #212121;
+    color: white;
+  }
+  
+  .dark-theme .login-card {
+    background-color: #333;
+    border-color: #444;
+  }
+  
+  .dark-theme .login-title {
+    color: #4fd792;
+  }
