@@ -145,7 +145,7 @@ const Home = () => {
   };
 
   return (
-    <div style={{ width: '100%', minHeight: '100vh', padding: '16px', backgroundColor: 'white' }}>
+    <div style={{ width: '100%', minHeight: '100vh', padding: '0px', backgroundColor: 'white' }}>
       <div style={{ padding: '16px', backgroundColor: '#111827', color: 'white' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '24px', fontWeight: 'bold' }}>CommitField</span>
