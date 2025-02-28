@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { API_BACKEND_URL, API_FRONT_URL } from "../config";
 import { Leaf, Sun, Wind, Snowflake } from 'lucide-react';
 import './CommitStats.css'; // CSS 파일 임포트
 

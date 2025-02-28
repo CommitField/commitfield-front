@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_BACKEND_URL, API_FRONT_URL } from "../config";
 
 const TestAPI = () => {
   const [commits, setCommits] = useState(null);
@@ -8,7 +9,7 @@ const TestAPI = () => {
     const controller = new AbortController();
     const signal = controller.signal;
 
-    fetch(`http://localhost:8090/api/commit-count/${username}`, { signal })
+    fetch(`${API_BACKEND_URL}/api/commit-count/${username}`, { signal })
       .then((response) => response.json())
       .then((data) => {
           console.log(data);
