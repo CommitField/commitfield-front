@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import SockJS from "sockjs-client";
 import { Stomp } from "@stomp/stompjs";
+import { API_BACKEND_URL, API_FRONT_URL } from "../config";
+
 
 const CommitTracker = () => {
   const [commits, setCommits] = useState(0);
@@ -8,7 +10,7 @@ const CommitTracker = () => {
 
   useEffect(() => {
     // WebSocket 연결 설정
-    const socket = new SockJS("http://localhost:8090/ws");
+    const socket = new SockJS(`${API_BACKEND_URL}/ws`);
     const stompClient = Stomp.over(socket);
 
     stompClient.connect({}, () => {
