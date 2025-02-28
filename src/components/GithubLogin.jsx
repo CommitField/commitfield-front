@@ -3,12 +3,20 @@ import { Github } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { API_BACKEND_URL, API_FRONT_URL } from "../config";
 
+import './Login.css';
+
+
 const GithubLogin = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check system preference for dark mode
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setIsDarkMode(prefersDark);
+    
     checkLoginStatus();
   }, []);
 
@@ -56,20 +64,22 @@ const GithubLogin = () => {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center">로딩 중...</div>;
+    return <div className="loading">로딩 중...</div>;
   }
 
   return (
-    <div className="p-4 flex flex-col items-center justify-center min-h-screen">
-      <h1 className="text-3xl font-bold mb-8">커밋 필드</h1>
+    <div className={`login-container ${isDarkMode ? 'dark-theme' : ''}`}>
       {!user ? (
-        <button
-          onClick={handleLogin}
-          className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          <Github size={20} />
-          GitHub로 로그인하기
-        </button>
+        <div className="login-card">
+          <h1 className="login-title">Commit Field</h1>
+          <button
+            onClick={handleLogin}
+            className="github-button"
+          >
+            <Github size={20} className="github-icon" />
+            github login
+          </button>
+        </div>
       ) : (
         <div className="space-y-8 flex flex-col items-center">
           <div className="flex items-center gap-4">
