@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_BACKEND_URL, API_FRONT_URL } from "../config";
 
 const Home = () => {
     const [user, setUser] = useState(null);
@@ -7,7 +8,7 @@ const Home = () => {
     
     const handleLogout = async () => {
       try {
-        const response = await fetch('http://localhost:8090/api/logout', {
+        const response = await fetch(`${API_BACKEND_URL}/api/logout`, {
           method: 'POST',
           credentials: 'include',  // 세션 쿠키 포함
         });
