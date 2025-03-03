@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Github } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { API_BACKEND_URL, API_FRONT_URL } from "../config";
+
 import './Login.css';
+
 
 const GithubLogin = () => {
   const [user, setUser] = useState(null);
@@ -35,7 +38,7 @@ const GithubLogin = () => {
 
   const handleLogin = () => {
     // GitHub OAuth 엔드포인트로 리다이렉트
-    window.location.href = 'http://localhost:8090/oauth2/authorization/github';
+    window.location.href = `${API_BACKEND_URL}/oauth2/authorization/github`;
   };
 
   const goToCommitInfo = () => {
@@ -44,7 +47,7 @@ const GithubLogin = () => {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('http://localhost:8090/api/logout', {
+      const response = await fetch(`${API_BACKEND_URL}/api/logout`, {
         method: 'POST',
         credentials: 'include',
       });
