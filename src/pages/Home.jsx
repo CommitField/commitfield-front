@@ -2,9 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BACKEND_URL, API_FRONT_URL } from "../config";
 import { Leaf, Sun, Wind, Snowflake } from 'lucide-react';
+import NotificationModal from '../modals/NotificationModal';
+import { FaBell } from 'react-icons/fa';
 import './CommitStats.css';
+import'../modals/NotificationModal.css';
 
 const Home = () => {
+  // 알림 모달
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  const toggleModal = () => {
+    setIsModalOpen(!isModalOpen);
+  };
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -140,14 +150,23 @@ const Home = () => {
       <div className="header">
         <div className="header-content">
           <span style={{ fontSize: '24px', fontWeight: 'bold' }}>CommitField</span>
-          <button
-            onClick={handleLogout}
-            style={{ backgroundColor: 'black', borderRadius: '6px', padding: '8px 16px', border: 'none' }}
-          >
-            로그아웃
-          </button>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={toggleModal}
+              className="notification-btn"
+            >
+              <FaBell className="notification-icon" />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="logout-btn"
+            >
+              로그아웃
+            </button>
+          </div>
         </div>
       </div>
+      {isModalOpen && <NotificationModal isOpen={isModalOpen} onClose={toggleModal} />}
 
       <div className="content-container">
         <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', paddingLeft: '16px' }}>내 커밋 기록</h2>
