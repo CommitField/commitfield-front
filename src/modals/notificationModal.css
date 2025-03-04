@@ -22,47 +22,50 @@
     background-color: rgba(255, 255, 255, 0.1);
   }
   
-  .notification-icon {
+  /* .notification-icon {
     color: white;
-  }
-
-  .close-btn {
-    background-color: #3fb27f;
-  }
-  
-  /* 로그아웃 버튼 스타일 */
-  .logout-btn {
-    background-color: rgba(0, 0, 0, 0.5);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 16px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
+  } */
   
   .logout-btn:hover {
     background-color: rgba(0, 0, 0, 0.7);
   }
   
   /* 모달 스타일 */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 50;
-  }
-  
   .modal-content {
     background-color: white;
     color: #1f2937;
     border-radius: 0.5rem;
-    padding: 1.5rem;
-    width: 24rem;
+    padding: 1.2rem 1.5rem;
     max-height: 80vh;
     overflow-y: auto;
     position: relative;
   }
+
+.notification-modal {
+  position: absolute;
+  top: 60px;
+  right: 100px;
+  width: 300px;
+  background: white;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 0px 16px;
+  z-index: 1000;
+}
+
+.notification-item {
+  display: flex;
+  align-items: center;
+  padding: 0 8px 4px 4px;
+}
+
+.notification-item span {
+  font-size: 14px;
+  color: #878787;
+}
+
+.noti-more {
+    padding-top: 20px;
+    text-align: center;
+    color: #878787;
+}
