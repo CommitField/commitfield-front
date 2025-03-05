@@ -32,11 +32,10 @@ function App() {
                         <div>보호된 페이지</div>
                     </ProtectedRoute>
                 } />
-                
+
                 {/* 채팅 관련 라우트 추가 */}
-                <Route path="/chat-rooms" element={<ChatRoomList />} />
+                <Route path="/chat-rooms/*" element={<ChatRoomList />} />
                 <Route path="/create-room" element={<CreateChatRoom />} />
-                <Route path="/chat/:roomId" element={<ChatRoom />} />
             </Routes>
         </Router>
     );

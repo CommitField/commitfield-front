@@ -1,7 +1,7 @@
-// src/components/CreateChatRoom.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ChatService from '../services/ChatService';
+import './ChatStyles.css';
 
 const CreateChatRoom = () => {
     const [title, setTitle] = useState('');
@@ -33,7 +33,7 @@ const CreateChatRoom = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    // CreateChatRoom.jsx의 handleSubmit 함수 수정
+    // 개선된 handleSubmit 함수 - 강제 새로고침 제거
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -47,14 +47,16 @@ const CreateChatRoom = () => {
             const response = await ChatService.createRoom(title, userCountMax);
             console.log('Create room response:', response);
 
-            // 서버 응답 확인 간소화
             if (response && !response.errorCode) {
+                // 성공 메시지 표시
                 alert('채팅방이 성공적으로 생성되었습니다.');
-
-                // React Router의 navigate 사용하고 새로고침 시켜서
-                // 목록을 다시 불러오도록 함
+                
+                // 강제 새로고침 대신 상태 관리 통해 업데이트되도록 함
+                // localStorage를 사용하여 상태 갱신 트리거
+                localStorage.setItem('chatRoomCreated', Date.now().toString());
+                
+                // 채팅방 목록으로 이동
                 navigate('/chat-rooms', { replace: true });
-                window.location.reload(); // 강제 새로고침
             } else {
                 alert(response.message || '채팅방 생성에 실패했습니다.');
             }
@@ -67,65 +69,75 @@ const CreateChatRoom = () => {
     };
 
     return (
-        <div className="container mx-auto p-4 max-w-md">
-            <h1 className="text-2xl font-bold mb-6">새 채팅방 만들기</h1>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label className="block text-gray-700 mb-2" htmlFor="title">
-                        채팅방 이름
-                    </label>
-                    <input
-                        id="title"
-                        type="text"
-                        className={`w-full p-2 border rounded ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="채팅방 이름을 입력하세요"
-                        minLength={2}
-                        maxLength={20}
-                    />
-                    {errors.title && (
-                        <p className="text-red-500 text-sm mt-1">{errors.title}</p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-gray-700 mb-2" htmlFor="userCountMax">
-                        최대 인원 수
-                    </label>
-                    <input
-                        id="userCountMax"
-                        type="number"
-                        className={`w-full p-2 border rounded ${errors.userCountMax ? 'border-red-500' : 'border-gray-300'}`}
-                        value={userCountMax}
-                        onChange={(e) => setUserCountMax(parseInt(e.target.value) || '')}
-                        min={2}
-                        max={100}
-                    />
-                    {errors.userCountMax && (
-                        <p className="text-red-500 text-sm mt-1">{errors.userCountMax}</p>
-                    )}
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-4">
-                    <button
-                        type="button"
-                        className="px-4 py-2 border border-gray-300 rounded text-gray-700"
+        <div className="chat-layout">
+            {/* 사이드바는 상위 컴포넌트에서 렌더링한다고 가정 */}
+            
+            <div className="chat-window">
+                <div className="chat-header">
+                    <div className="room-title">새 채팅방 만들기</div>
+                    <button 
+                        className="action-btn"
                         onClick={() => navigate('/chat-rooms')}
-                        disabled={loading}
                     >
-                        취소
-                    </button>
-                    <button
-                        type="submit"
-                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                        disabled={loading}
-                    >
-                        {loading ? '생성 중...' : '생성하기'}
+                        <i className="fa-solid fa-xmark"></i>
                     </button>
                 </div>
-            </form>
+                
+                <div className="create-room-form">
+                    <form onSubmit={handleSubmit}>
+                        <div className="form-group">
+                            <label htmlFor="title">채팅방 이름</label>
+                            <input
+                                id="title"
+                                type="text"
+                                className={errors.title ? 'error' : ''}
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="채팅방 이름을 입력하세요"
+                                minLength={2}
+                                maxLength={20}
+                            />
+                            {errors.title && (
+                                <p className="error-message">{errors.title}</p>
+                            )}
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="userCountMax">최대 인원 수</label>
+                            <input
+                                id="userCountMax"
+                                type="number"
+                                className={errors.userCountMax ? 'error' : ''}
+                                value={userCountMax}
+                                onChange={(e) => setUserCountMax(parseInt(e.target.value) || '')}
+                                min={2}
+                                max={100}
+                            />
+                            {errors.userCountMax && (
+                                <p className="error-message">{errors.userCountMax}</p>
+                            )}
+                        </div>
+
+                        <div className="form-actions">
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => navigate('/chat-rooms')}
+                                disabled={loading}
+                            >
+                                취소
+                            </button>
+                            <button
+                                type="submit"
+                                className="btn btn-primary"
+                                disabled={loading}
+                            >
+                                {loading ? '생성 중...' : '생성하기'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     );
 };
