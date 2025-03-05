@@ -6,46 +6,16 @@ import NotificationModal from '../modals/NotificationModal';
 import { FaBell } from 'react-icons/fa';
 import './CommitStats.css';
 import '../modals/NotificationModal.css';
+import NotiService from '../services/NotiService';
+import webSocketService from '../services/WebSocketService';
 
 const Home = () => {
   // 알림 모달
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [hasNewNotification, setHasNewNotification] = useState(false);
-
-  const toggleModal = () => {
-    setIsModalOpen(!isModalOpen);
-    if (isModalOpen) {
-      setHasNewNotification(false); // 모달을 열면 새로운 알림 표시 제거
-    }
-  };
-
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const response = await fetch('/api/notifications', { credentials: 'include' });
-        if (!response.ok) {
-          throw new Error('알림 데이터를 가져오는데 실패했습니다');
-        }
-
-        const data = await response.json();
-        console.log(data.data);
-        setNotifications(data.data);
-
-        // 새로운 알림이 있는지 확인
-        if (data.length > 0) {
-          setHasNewNotification(true);
-        }
-      } catch (error) {
-        console.error('알림 데이터 가져오기 오류:', error);
-      }
-    };
-
-    fetchNotifications();
-  }, []);
-
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
   const [totalCommitData, setTotalCommitData] = useState(null);
   const [seasonData, setSeasonData] = useState({
@@ -54,8 +24,78 @@ const Home = () => {
     fall: null,
     winter: null
   });
+  const [connected, setConnected] = useState(false);  // 웹소켓 연결 상태
   const navigate = useNavigate();
 
+  const toggleModal = () => {
+    setIsModalOpen(!isModalOpen);
+    if (isModalOpen) {
+      setHasNewNotification(false); // 모달을 열면 새로운 알림 표시 제거
+    }
+  };
+
+  // 메시지 목록을 로드하는 함수
+  const loadNotis = async () => {
+    try {
+        setLoading(true);
+        const response = await NotiService.getNotis();
+        console.log('Noti response:', response);
+        setNotifications(response.data);
+        setLoading(false);
+    } catch (err) {
+        console.error('Error loading Noti:', err);
+        setError('알림 데이터를 가져오는데 실패했습니다.');
+        setLoading(false)
+    }
+};
+
+useEffect(() => {
+  loadNotis();
+
+  // 웹소켓 연결
+  webSocketService.connect();
+
+  // 연결 상태 변경 이벤트 리스너 등록
+  const unsubscribeFromConnection = webSocketService.onConnectionChange(setConnected);
+
+  // 채팅방 구독 시도
+  setTimeout(() => {
+      const success = webSocketService.subscribeToNotificationChannel();
+      console.log('Notis subscription success:', success);
+  }, 1000); // 약간의 지연을 두어 연결이 설정될 시간을 줌
+
+  // 컴포넌트 언마운트 시 이벤트 리스너 제거 및 구독 해제
+  return () => {
+      if (unsubscribeFromConnection) {
+          unsubscribeFromConnection();
+      }
+  };
+}, []);
+
+  // useEffect(() => {
+  //   const fetchNotifications = async () => {
+  //     try {
+  //       const response = await fetch('/api/notifications', { credentials: 'include' });
+  //       if (!response.ok) {
+  //         throw new Error('알림 데이터를 가져오는데 실패했습니다');
+  //       }
+
+  //       const data = await response.json();
+  //       console.log(data.data);
+  //       setNotifications(data.data);
+
+  //       // 새로운 알림이 있는지 확인
+  //       if (data.length > 0) {
+  //         setHasNewNotification(true);
+  //       }
+  //     } catch (error) {
+  //       console.error('알림 데이터 가져오기 오류:', error);
+  //     }
+  //   };
+
+  //   fetchNotifications();
+  // }, []);
+  
   useEffect(() => {
     const fetchCommitData = async () => {
       try {

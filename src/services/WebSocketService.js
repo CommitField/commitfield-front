@@ -14,6 +14,8 @@ class WebSocketService {
     this.connectionCallbacks = new Set(); // 연결 상태 콜백 추가
     this.subscribedRooms = new Set();
     this.subscriptions = {};
+    this.notificationCallbacks = new Set(); // 알림 콜백 추가
+    
   }
 
   connect() {
@@ -38,7 +40,7 @@ class WebSocketService {
       this.notifyConnectionStatus(false);
       
       // SockJS와 STOMP 클라이언트 생성
-      const socket = new SockJS(`${API_BACKEND_URL || 'http://localhost:8090'}/ws-stomp`);
+      const socket = new SockJS(`${API_BACKEND_URL}/ws`);
       
       this.stompClient = new Client({
         webSocketFactory: () => socket,
@@ -59,6 +61,8 @@ class WebSocketService {
         // 연결 상태 알림
         this.notifyConnectionStatus(true);
         
+        // 알림 구독
+        this.subscribeToNotificationChannel();
         // 연결 성공 시 기존에 구독했던 모든 방에 다시 구독
         setTimeout(() => {
           this.subscribedRooms.forEach(roomId => {
@@ -222,6 +226,44 @@ class WebSocketService {
     }
   }
 
+  // 알림 채널 구독
+  subscribeToNotificationChannel() {
+    if (!this.stompClient || !this.isConnected) {
+      console.warn('WebSocket is not connected. Unable to subscribe to notifications.');
+      return false;
+    }
+
+    try {
+      console.log('Subscribing to notification channel...');
+
+      const notificationSubscription = this.stompClient.subscribe(`/sub/notification`, (message) => {
+        try {
+          console.log('Received notification:', message);
+          const notification = JSON.parse(message.body);
+
+          // 알림 수신 시 모든 콜백 실행
+          this.notificationCallbacks.forEach(callback => {
+            callback(notification);
+          });
+        } catch (error) {
+          console.error('Error parsing notification message:', error);
+        }
+      });
+
+      console.log('Subscribed to notification channel');
+      return true;
+    } catch (error) {
+      console.error('Error subscribing to notification channel:', error);
+      return false;
+    }
+  }
+
+  // 알림 이벤트 리스너 등록
+  onNotification(callback) {
+    this.notificationCallbacks.add(callback);
+    return () => this.notificationCallbacks.delete(callback);
+  }
+
   // 메시지 수신 이벤트 리스너 등록
   onMessage(callback) {
     this.messageCallbacks.add(callback);
@@ -263,6 +305,9 @@ class WebSocketService {
   disconnect() {
     if (this.stompClient && this.isConnected) {
       try {
+        // 알림 구독 해지
+        this.unsubscribeFromNotificationChannel();
+
         // 모든 구독 해지
         Object.keys(this.subscriptions).forEach(roomId => {
           this.unsubscribeFromRoom(roomId);
@@ -281,6 +326,15 @@ class WebSocketService {
       } catch (error) {
         console.error('Error disconnecting WebSocket:', error);
       }
+    }
+  }
+
+  // 알림 채널 구독 해지
+  unsubscribeFromNotificationChannel() {
+    // 알림 채널 구독 해지
+    if (this.stompClient) {
+      this.stompClient.unsubscribe('/sub/notification');
+      console.log('Unsubscribed from notification channel');
     }
   }
 }
