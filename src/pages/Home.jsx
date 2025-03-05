@@ -2,9 +2,48 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BACKEND_URL, API_FRONT_URL } from "../config";
 import { Leaf, Sun, Wind, Snowflake, MessageSquare } from 'lucide-react';
+import NotificationModal from '../modals/NotificationModal';
+import { FaBell } from 'react-icons/fa';
 import './CommitStats.css';
+import'../modals/NotificationModal.css';
 
 const Home = () => {
+  // 알림 모달
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [hasNewNotification, setHasNewNotification] = useState(false);
+  
+  const toggleModal = () => {
+    setIsModalOpen(!isModalOpen);
+    if (isModalOpen) {
+      setHasNewNotification(false); // 모달을 열면 새로운 알림 표시 제거
+    }
+  };
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch('/api/notifications', { credentials: 'include' });
+        if (!response.ok) {  
+          throw new Error('알림 데이터를 가져오는데 실패했습니다');
+        }
+
+        const data = await response.json();
+        console.log(data.data);
+        setNotifications(data.data);
+
+        // 새로운 알림이 있는지 확인
+        if (data.length > 0) {
+          setHasNewNotification(true);
+        }
+      } catch (error) {
+        console.error('알림 데이터 가져오기 오류:', error);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -71,7 +110,7 @@ const Home = () => {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('http://localhost:8090/api/logout', {
+      const response = await fetch(`${API_BACKEND_URL}/api/logout`, {
         method: 'POST',
         credentials: 'include',  // 세션 쿠키 포함
       });
@@ -146,6 +185,7 @@ const Home = () => {
         <div className="header-content">
           <span style={{ fontSize: '24px', fontWeight: 'bold' }}>CommitField</span>
           <div className="flex items-center gap-4">
+
             {/* 채팅 버튼 추가 */}
             <button
               onClick={goToChat}
@@ -165,12 +205,22 @@ const Home = () => {
             <button
               onClick={handleLogout}
               style={{ backgroundColor: 'black', borderRadius: '6px', padding: '8px 16px', border: 'none' }}
+
+          <button onClick={toggleModal} className="notification-btn">
+        <FaBell className="notification-icon" />
+        {hasNewNotification && <span className="notification-badge"></span>}
+      </button>
+            <button
+              onClick={handleLogout}
+              className="logout-btn"
+
             >
               로그아웃
             </button>
           </div>
         </div>
       </div>
+      {isModalOpen && <NotificationModal notifications={notifications} onClose={toggleModal} />}
 
       <div className="content-container">
         <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', paddingLeft: '16px' }}>내 커밋 기록</h2>
