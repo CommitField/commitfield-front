@@ -24,15 +24,33 @@ const ChatRoom = () => {
     const [connected, setConnected] = useState(false);
     const [isRoomCreator, setIsRoomCreator] = useState(false);
     const [actionInProgress, setActionInProgress] = useState(false);
+    const roomIdInt = parseInt(roomId);
+    const [wsConnectionRetries, setWsConnectionRetries] = useState(0);
+    const maxWsRetries = 5;
 
     // Fetch room details including creator info
     const fetchRoomDetails = async () => {
         try {
             const createdRooms = await ChatService.getMyCreatedRooms();
-            const isCreator = createdRooms.data?.some(room => room.id === parseInt(roomId));
-            setIsRoomCreator(isCreator);
+            if (createdRooms && createdRooms.data) {
+                const isCreator = createdRooms.data.some(room => room.id === roomIdInt);
+                setIsRoomCreator(isCreator);
+                
+                // 룸 정보 가져오기
+                const roomData = createdRooms.data.find(room => room.id === roomIdInt);
+                if (roomData) {
+                    setRoomInfo({
+                        title: roomData.title || '채팅방',
+                        userCount: roomData.currentUserCount || 0,
+                        maxUserCount: roomData.userCountMax || 0,
+                        isCreator: isCreator
+                    });
+                }
+            }
         } catch (err) {
             console.error('Error fetching room details:', err);
+            // 에러 발생 시 기본 정보로 설정
+            setIsRoomCreator(false);
         }
     };
 
@@ -45,7 +63,7 @@ const ChatRoom = () => {
             const response = await ChatService.getChatMessages(roomId, lastMessageId);
             console.log('Messages response:', response);
 
-            if (response.success) {
+            if (response && response.success) {
                 if (lastMessageId === null) {
                     // 초기 로드
                     setMessages(response.data || []);
@@ -64,6 +82,11 @@ const ChatRoom = () => {
             } else {
                 if (lastMessageId === null) {
                     setMessages([]);
+                    
+                    // 응답이 성공이 아니지만 오류가 아닌 경우 (예: 메시지가 없는 경우)
+                    if (response && response.message) {
+                        console.log('No messages or other condition:', response.message);
+                    }
                 }
             }
         } catch (err) {
@@ -72,6 +95,7 @@ const ChatRoom = () => {
             if (lastMessageId === null) {
                 // 초기 로드 실패만 에러로 표시
                 setError('메시지를 불러오는데 실패했습니다.');
+                setMessages([]); // 빈 메시지 배열로 설정
             }
         } finally {
             setLoading(false);
@@ -88,17 +112,7 @@ const ChatRoom = () => {
         const messageText = newMessage;
         setNewMessage('');
 
-        // 웹소켓으로 메시지 전송
-        const success = webSocketService.sendMessage(
-            roomId,
-            messageText,
-            userInfo.id,
-            userInfo.nickname
-        );
-
-        console.log('Message sent via WebSocket, success:', success);
-
-        // 웹소켓 전송 여부와 상관없이 항상 로컬에 메시지 추가
+        // 새 메시지 객체 생성
         const newMsg = {
             chatMsgId: `local-${Date.now()}`, // 로컬 메시지 ID
             userId: userInfo.id,
@@ -107,21 +121,58 @@ const ChatRoom = () => {
             sendAt: new Date().toISOString()
         };
 
-        // 메시지 목록에 추가
+        // 메시지 목록에 바로 추가 (낙관적 UI 업데이트)
         setMessages(prevMessages => [...prevMessages, newMsg]);
 
-        if (!success) {
-            // 웹소켓 실패 시 REST API로 시도
-            try {
-                const response = await ChatService.sendMessage(roomId, messageText);
-                if (!response.success) {
-                    console.error('API message send failed:', response);
-                    alert(response.message || '메시지 전송에 실패했습니다.');
+        // 메시지 전송 시도 
+        try {
+            // 1. 웹소켓으로 먼저 시도
+            const wsSuccess = await webSocketService.sendMessage(
+                roomIdInt,
+                messageText,
+                userInfo.id,
+                userInfo.nickname
+            );
+
+            console.log('Message sent via WebSocket, success:', wsSuccess);
+
+            // 2. 웹소켓 실패 시 REST API로 시도
+            if (!wsSuccess) {
+                console.log('WebSocket send failed, trying REST API');
+                try {
+                    const response = await ChatService.sendMessage(roomId, messageText);
+                    if (!response || !response.success) {
+                        console.error('API message send failed:', response);
+                        throw new Error(response?.message || '메시지 전송에 실패했습니다.');
+                    }
+                } catch (apiErr) {
+                    console.error('REST API send failed:', apiErr);
+                    // 실패 알림 표시 (기존 메시지는 유지)
+                    setMessages(prevMessages => 
+                        prevMessages.map(msg => 
+                            msg.chatMsgId === newMsg.chatMsgId
+                                ? {...msg, failed: true, failReason: '전송 실패'}
+                                : msg
+                        )
+                    );
+                    
+                    // 사용자에게 알림
+                    alert(apiErr.message || '메시지 전송에 실패했습니다.');
                 }
-            } catch (err) {
-                console.error('Error sending message:', err);
-                alert('메시지 전송에 실패했습니다.');
             }
+        } catch (err) {
+            console.error('Error in message send flow:', err);
+            // 실패 표시 추가
+            setMessages(prevMessages => 
+                prevMessages.map(msg => 
+                    msg.chatMsgId === newMsg.chatMsgId
+                        ? {...msg, failed: true, failReason: '전송 실패'}
+                        : msg
+                )
+            );
+            
+            // 사용자에게 알림
+            alert('메시지 전송에 실패했습니다.');
         }
     };
 
@@ -134,9 +185,9 @@ const ChatRoom = () => {
 
         try {
             const response = await ChatService.leaveRoom(roomId);
-            if (response.success) {
+            if (response && response.success) {
                 // 웹소켓 연결 해제
-                webSocketService.unsubscribeFromRoom(roomId);
+                webSocketService.unsubscribeFromRoom(roomIdInt);
 
                 // localStorage에 이벤트 기록 (목록 새로고침용)
                 localStorage.setItem('chatRoomChanged', Date.now().toString());
@@ -160,12 +211,12 @@ const ChatRoom = () => {
                     window.location.href = '/chat-rooms';
                 }
             } else {
-                alert(response.message || '채팅방을 나가는데 실패했습니다.');
+                alert(response?.message || '채팅방을 나가는데 실패했습니다.');
                 setActionInProgress(false); // 실패 시 액션 상태 초기화
             }
         } catch (err) {
             console.error('Error leaving room:', err);
-            alert('채팅방을 나가는데 실패했습니다.');
+            alert(err?.message || '채팅방을 나가는데 실패했습니다.');
             setActionInProgress(false); // 실패 시 액션 상태 초기화
         }
     };
@@ -184,9 +235,9 @@ const ChatRoom = () => {
 
         try {
             const response = await ChatService.deleteRoom(roomId);
-            if (response.success) {
+            if (response && response.success) {
                 // 웹소켓 연결 해제
-                webSocketService.unsubscribeFromRoom(roomId);
+                webSocketService.unsubscribeFromRoom(roomIdInt);
 
                 // localStorage에 이벤트 기록 (목록 새로고침용)
                 localStorage.setItem('chatRoomChanged', Date.now().toString());
@@ -210,20 +261,15 @@ const ChatRoom = () => {
                     window.location.href = '/chat-rooms';
                 }
             } else {
-                alert(response.message || '채팅방 삭제에 실패했습니다.');
+                alert(response?.message || '채팅방 삭제에 실패했습니다.');
                 setActionInProgress(false); // 실패 시 액션 상태 초기화
             }
         } catch (err) {
             console.error('Error deleting room:', err);
-            alert('채팅방 삭제에 실패했습니다.');
+            alert(err?.message || '채팅방 삭제에 실패했습니다.');
             setActionInProgress(false); // 실패 시 액션 상태 초기화
         }
     };
-
-    // Add effect to fetch room details
-    useEffect(() => {
-        fetchRoomDetails();
-    }, [roomId]);
 
     // 현재 로그인한 사용자 정보 가져오기
     const getCurrentUser = () => {
@@ -254,14 +300,28 @@ const ChatRoom = () => {
         }
     };
 
-    // 웹소켓 메시지 핸들러
+    // 웹소켓 메시지 핸들러 - 일반 웹소켓용
     const handleWebSocketMessage = (message) => {
         console.log('WebSocket message received:', message);
 
         // 시스템 메시지 처리
-        if (message.type === 'SYSTEM') {
-            // 시스템 메시지는 서비스 알림으로 표시 (옵션)
-            console.log('System message:', message.message);
+        if (message.type === 'SYSTEM' || message.type === 'SUBSCRIBE_ACK' || message.type === 'UNSUBSCRIBE_ACK') {
+            // 시스템 메시지는 상태 표시만 하고 채팅에 추가하지 않음
+            console.log('System/Control message:', message.message);
+            return;
+        }
+        
+        // 에러 메시지 처리
+        if (message.type === 'ERROR') {
+            console.error('WebSocket error message:', message.message);
+            // alert(message.message || '채팅 오류가 발생했습니다.');
+            return;
+        }
+
+        // 채팅방 ID 확인
+        const messageRoomId = message.roomId ? parseInt(message.roomId) : null;
+        if (messageRoomId && messageRoomId !== roomIdInt) {
+            console.log('Message for different room ignored:', messageRoomId);
             return;
         }
 
@@ -276,8 +336,30 @@ const ChatRoom = () => {
 
         // 중복 메시지 방지
         setMessages(prevMessages => {
+            // 로컬 메시지 ID (local-*)로 시작하는 임시 메시지 대체
+            const isLocalMessage = prevMessages.some(msg => 
+                msg.chatMsgId?.toString().startsWith('local-') && 
+                msg.message === newMessage.message &&
+                msg.userId === newMessage.userId
+            );
+            
+            if (isLocalMessage) {
+                // 임시 메시지를 서버 메시지로 대체
+                return prevMessages.map(msg => 
+                    (msg.chatMsgId?.toString().startsWith('local-') && 
+                     msg.message === newMessage.message &&
+                     msg.userId === newMessage.userId) 
+                        ? newMessage 
+                        : msg
+                );
+            }
+            
             // 이미 동일한 ID의 메시지가 있는지 확인
-            const exists = prevMessages.some(msg => msg.chatMsgId === newMessage.chatMsgId);
+            const exists = prevMessages.some(msg => 
+                msg.chatMsgId === newMessage.chatMsgId && 
+                !msg.chatMsgId?.toString().startsWith('local-')
+            );
+            
             if (exists) return prevMessages;
             return [...prevMessages, newMessage];
         });
@@ -287,37 +369,50 @@ const ChatRoom = () => {
     const handleConnectionChange = (isConnected) => {
         setConnected(isConnected);
         console.log('WebSocket connection status:', isConnected);
+        
+        // 연결이 되면 재시도 카운터 초기화
+        if (isConnected) {
+            setWsConnectionRetries(0);
+        }
     };
 
-    useEffect(() => {
-        getCurrentUser();
-        loadMessages();
-
-        // 웹소켓 연결 및 채팅방 구독
-        webSocketService.connect();
-
-        // 메시지 수신 이벤트 리스너 등록
-        const unsubscribeFromMessages = webSocketService.onMessage(handleWebSocketMessage);
-
-        // 연결 상태 변경 이벤트 리스너 등록
-        const unsubscribeFromConnection = webSocketService.onConnectionChange(setConnected);
-
-        // 채팅방 구독 시도
-        setTimeout(() => {
-            const success = webSocketService.subscribeToRoom(roomId);
+    // 구독 시도 함수
+    const trySubscribeToRoom = async () => {
+        if (wsConnectionRetries >= maxWsRetries) {
+            console.error(`Maximum WebSocket connection retries (${maxWsRetries}) reached`);
+            return false;
+        }
+        
+        try {
+            // WebSocket 연결 확인
+            const isConnected = await webSocketService.ensureConnection();
+            if (!isConnected) {
+                console.warn('WebSocket not connected, retry later');
+                setWsConnectionRetries(prev => prev + 1);
+                return false;
+            }
+            
+            // 방 구독 시도
+            const success = await webSocketService.subscribeToRoom(roomIdInt);
             console.log('Room subscription success:', success);
-        }, 1000); // 약간의 지연을 두어 연결이 설정될 시간을 줌
+            
+            if (success) {
+                return true;
+            } else {
+                // 구독 실패 시 재시도 카운터 증가
+                setWsConnectionRetries(prev => prev + 1);
+                return false;
+            }
+        } catch (err) {
+            console.error('Error subscribing to room:', err);
+            setWsConnectionRetries(prev => prev + 1);
+            return false;
+        }
+    };
 
-        // 컴포넌트 언마운트 시 이벤트 리스너 제거 및 구독 해제
-        return () => {
-            if (unsubscribeFromMessages) {
-                unsubscribeFromMessages();
-            }
-            if (unsubscribeFromConnection) {
-                unsubscribeFromConnection();
-            }
-            webSocketService.unsubscribeFromRoom(roomId);
-        };
+    // Add effect to fetch room details
+    useEffect(() => {
+        fetchRoomDetails();
     }, [roomId]);
 
     // 메시지 목록이 바뀔 때마다 스크롤을 최하단으로 이동
@@ -335,6 +430,60 @@ const ChatRoom = () => {
             }
         }
     };
+
+    useEffect(() => {
+        getCurrentUser();
+        loadMessages();
+
+        // 웹소켓 연결 및 채팅방 구독
+        // 연결 상태 변경 이벤트 리스너 등록
+        const unsubscribeFromConnection = webSocketService.onConnectionChange(handleConnectionChange);
+        
+        // 메시지 수신 이벤트 리스너 등록
+        const unsubscribeFromMessages = webSocketService.onMessage(handleWebSocketMessage);
+
+        // 웹소켓 연결 및 구독 시도
+        const initialSubscription = async () => {
+            await webSocketService.connect();
+            
+            // 구독 시도
+            const subscriptionSuccess = await trySubscribeToRoom();
+            
+            if (!subscriptionSuccess) {
+                // 첫 시도 실패 시 재시도 로직
+                let retryAttempt = 0;
+                const maxRetries = 3;
+                const retryInterval = 2000; // 2초
+                
+                const retrySubscription = setInterval(async () => {
+                    retryAttempt++;
+                    console.log(`Retrying subscription to room ${roomId}, attempt ${retryAttempt}`);
+                    
+                    const retrySuccess = await trySubscribeToRoom();
+                    if (retrySuccess || retryAttempt >= maxRetries) {
+                        console.log(`Subscription retry ${retrySuccess ? 'succeeded' : 'failed after max attempts'}`);
+                        clearInterval(retrySubscription);
+                    }
+                }, retryInterval);
+                
+                // 컴포넌트 언마운트 시 인터벌 정리
+                return () => clearInterval(retrySubscription);
+            }
+        };
+        
+        initialSubscription();
+
+        // 컴포넌트 언마운트 시 이벤트 리스너 제거 및 구독 해제
+        return () => {
+            if (unsubscribeFromMessages) {
+                unsubscribeFromMessages();
+            }
+            if (unsubscribeFromConnection) {
+                unsubscribeFromConnection();
+            }
+            webSocketService.unsubscribeFromRoom(roomIdInt);
+        };
+    }, [roomId]);
 
     // 메시지 시간 형식화
     const formatTime = (dateTimeString) => {
@@ -454,7 +603,7 @@ const ChatRoom = () => {
                                         {groupedMessages[date].map((msg) => (
                                             <div
                                                 key={msg.chatMsgId || `${msg.userId}-${Date.now()}-${Math.random()}`}
-                                                className={`message ${msg.userId === userInfo.id ? 'sent' : 'received'}`}
+                                                className={`message ${msg.userId === userInfo.id ? 'sent' : 'received'} ${msg.failed ? 'failed' : ''}`}
                                             >
                                                 <div className="avatar">
                                                     {/* 실제 사용자 아바타가 있으면 추가 */}
@@ -464,6 +613,7 @@ const ChatRoom = () => {
                                                     <div className="bubble">{msg.message}</div>
                                                     <div className="time">
                                                         {msg.sendAt ? formatTime(msg.sendAt) : ''}
+                                                        {msg.failed && <span className="error-badge" title={msg.failReason}>!</span>}
                                                     </div>
                                                 </div>
                                             </div>
@@ -490,12 +640,12 @@ const ChatRoom = () => {
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="메시지를 입력하세요"
                         maxLength={300}
-                        disabled={actionInProgress}
+                        disabled={actionInProgress || !connected}
                     />
                     <button
                         type="submit"
                         className="send-btn"
-                        disabled={!newMessage.trim() || actionInProgress}
+                        disabled={!newMessage.trim() || actionInProgress || !connected}
                     >
                         <i className="fa-solid fa-paper-plane"></i>
                     </button>
