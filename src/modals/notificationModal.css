@@ -55,7 +55,7 @@
 
 .notification-item {
   align-items: center;
-  padding: 0 8px 4px 4px;
+  padding: 0 8px 16px 4px;
 }
 
 .notification-item span {
