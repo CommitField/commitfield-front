@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BACKEND_URL, API_FRONT_URL } from "../config";
-import { Leaf, Sun, Wind, Snowflake } from 'lucide-react';
+import { Leaf, Sun, Wind, Snowflake, MessageSquare } from 'lucide-react';
 import './CommitStats.css';
 
 const Home = () => {
@@ -15,6 +15,7 @@ const Home = () => {
     fall: null,
     winter: null
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCommitData = async () => {
@@ -86,6 +87,10 @@ const Home = () => {
     }
   };
 
+  const goToChat = () => {
+    navigate('/chat-rooms');
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -140,12 +145,30 @@ const Home = () => {
       <div className="header">
         <div className="header-content">
           <span style={{ fontSize: '24px', fontWeight: 'bold' }}>CommitField</span>
-          <button
-            onClick={handleLogout}
-            style={{ backgroundColor: 'black', borderRadius: '6px', padding: '8px 16px', border: 'none' }}
-          >
-            로그아웃
-          </button>
+          <div className="flex items-center gap-4">
+            {/* 채팅 버튼 추가 */}
+            <button
+              onClick={goToChat}
+              style={{ 
+                backgroundColor: '#3b82f6', 
+                borderRadius: '6px', 
+                padding: '8px 16px', 
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <MessageSquare size={18} />
+              <span>채팅방</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              style={{ backgroundColor: 'black', borderRadius: '6px', padding: '8px 16px', border: 'none' }}
+            >
+              로그아웃
+            </button>
+          </div>
         </div>
       </div>
 
