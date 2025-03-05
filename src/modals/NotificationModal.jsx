@@ -24,7 +24,7 @@ const NotificationModal = ({ notifications, onClose }) => {
             notifications.map((notif) => (
               <div key={notif.id} className="notification-item">
                 <p>{notif.message}</p>
-                <span>{notif.createdAt}</span>
+                <span>{notif.formattedCreatedAt}</span>
               </div>
             ))
           ) : (
