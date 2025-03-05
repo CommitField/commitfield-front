@@ -1,24 +1,20 @@
+// src/App.jsx
 import { BrowserRouter as Router, Route, Routes, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Home from "./pages/Home";
 import CommitTracker from "./pages/CommitTracker";
 import ErrorPage from "./error/ErrorPage";
 import TestAPI from "./pages/TestAPI";
 import GithubLogin from "./components/GithubLogin";
+import ChatRoomList from "./components/ChatRoomList";
+import CreateChatRoom from "./components/CreateChatRoom";
+import ChatRoom from "./components/ChatRoom";
 
 function ProtectedRoute({ children }) {
     const navigate = useNavigate();
+    const [isAuthenticated, setIsAuthenticated] = useState(true); // 기본값을 true로 설정
 
-    useEffect(() => {
-        fetch("/api/protected-endpoint")
-            .then(response => {
-                if (response.status === 403) {
-                    navigate("/error");  // 403이면 에러 페이지로 이동
-                }
-            })
-            .catch(() => navigate("/error"));  // 기타 네트워크 오류 시에도 에러 페이지로 이동
-    }, [navigate]);
-
+    // 개발 중에는 항상 인증된 것으로 처리
     return children;
 }
 
@@ -30,13 +26,16 @@ function App() {
                 <Route path="/home" element={<Home />} />
                 <Route path="/error" element={<ErrorPage />} />
                 <Route path="/commit" element={<CommitTracker />} />
-                {/* <Route path="/commit-info" element={<CommitInfo />} /> 이 라인을 제거 */}
                 <Route path="/testapi" element={<TestAPI />} />
                 <Route path="/protected" element={
                     <ProtectedRoute>
                         <div>보호된 페이지</div>
                     </ProtectedRoute>
                 } />
+
+                {/* 채팅 관련 라우트 추가 */}
+                <Route path="/chat-rooms/*" element={<ChatRoomList />} />
+                <Route path="/create-room" element={<CreateChatRoom />} />
             </Routes>
         </Router>
     );
