@@ -185,21 +185,24 @@ const Home = () => {
         <div className="header-content">
           <span style={{ fontSize: '24px', fontWeight: 'bold' }}>CommitField</span>
           <div className="flex items-center gap-4">
-
+          <button onClick={toggleModal} className="notification-btn">
+              <FaBell className="notification-icon" />
+              {hasNewNotification && <span className="notification-badge"></span>}
+            </button>
             {/* 채팅 버튼 추가 */}
             <button
               onClick={goToChat}
               style={{
-                backgroundColor: '#3b82f6',
+                backgroundColor: '#3fb27f',
                 borderRadius: '6px',
                 padding: '8px 16px',
                 border: 'none',
-                display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '6px',
+                marginRight: '8px'
               }}
             >
-              <MessageSquare size={18} />
+              {/* <MessageSquare size={18} /> */}
               <span>채팅방</span>
             </button>
 
@@ -207,11 +210,6 @@ const Home = () => {
               onClick={handleLogout}
               style={{ backgroundColor: 'black', borderRadius: '6px', padding: '8px 16px', border: 'none' }}
             >로그아웃
-            </button>
-
-            <button onClick={toggleModal} className="notification-btn">
-              <FaBell className="notification-icon" />
-              {hasNewNotification && <span className="notification-badge"></span>}
             </button>
           </div>
         </div>
