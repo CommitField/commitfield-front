@@ -1,4 +1,4 @@
-// src/services/ChatService.js
+// src/services/ChatService.js - 개선된 버전
 import axios from 'axios';
 import { API_BACKEND_URL } from '../config';
 
@@ -7,6 +7,26 @@ const apiClient = axios.create({
   baseURL: API_BACKEND_URL || 'http://localhost:8090', // 기본값 설정
   withCredentials: true, // 쿠키 기반 인증을 위해 필요 (OAuth2)
 });
+
+// 캐시 설정
+const cache = {
+  rooms: {
+    all: null,
+    created: null,
+    joined: null,
+    timestamp: 0
+  },
+  clearCache: function() {
+    this.rooms.all = null;
+    this.rooms.created = null;
+    this.rooms.joined = null;
+    this.rooms.timestamp = 0;
+  },
+  isCacheValid: function() {
+    // 캐시 유효 시간을 10초로 설정
+    return Date.now() - this.rooms.timestamp < 10000;
+  }
+};
 
 // 응답 인터셉터 - 공통 에러 처리
 apiClient.interceptors.response.use(
@@ -45,10 +65,29 @@ apiClient.interceptors.response.use(
 );
 
 const ChatService = {
-  // 채팅방 목록 조회
-  getRoomList: async (page = 0, size = 10) => {
+  // 캐시 초기화 메서드
+  clearCache: () => {
+    cache.clearCache();
+  },
+  
+  // 채팅방 목록 조회 - 캐시 적용
+  getRoomList: async (page = 0, size = 10, forceRefresh = false) => {
     try {
+      // 캐시가 유효하고 강제 새로고침이 아닌 경우 캐시된 데이터 반환
+      if (cache.rooms.all && cache.isCacheValid() && !forceRefresh) {
+        console.log('Using cached room list');
+        return cache.rooms.all;
+      }
+      
+      console.log('Fetching fresh room list');
       const response = await apiClient.get(`/chat/room?page=${page}&size=${size}`);
+      
+      // 성공적인 응답인 경우 캐시 업데이트
+      if (response.success) {
+        cache.rooms.all = response;
+        cache.rooms.timestamp = Date.now();
+      }
+      
       return response;
     } catch (error) {
       console.error('Error fetching room list:', error);
@@ -56,10 +95,24 @@ const ChatService = {
     }
   },
 
-  // 내가 생성한 채팅방 목록 조회
-  getMyCreatedRooms: async (page = 0, size = 10) => {
+  // 내가 생성한 채팅방 목록 조회 - 캐시 적용
+  getMyCreatedRooms: async (page = 0, size = 10, forceRefresh = false) => {
     try {
+      // 캐시가 유효하고 강제 새로고침이 아닌 경우 캐시된 데이터 반환
+      if (cache.rooms.created && cache.isCacheValid() && !forceRefresh) {
+        console.log('Using cached created rooms');
+        return cache.rooms.created;
+      }
+      
+      console.log('Fetching fresh created rooms');
       const response = await apiClient.get(`/chat/room/creator?page=${page}&size=${size}`);
+      
+      // 성공적인 응답인 경우 캐시 업데이트
+      if (response.success) {
+        cache.rooms.created = response;
+        cache.rooms.timestamp = Date.now();
+      }
+      
       return response;
     } catch (error) {
       console.error('Error fetching created rooms:', error);
@@ -67,10 +120,24 @@ const ChatService = {
     }
   },
 
-  // 내가 참여한 채팅방 목록 조회
-  getMyJoinedRooms: async (page = 0, size = 10) => {
+  // 내가 참여한 채팅방 목록 조회 - 캐시 적용
+  getMyJoinedRooms: async (page = 0, size = 10, forceRefresh = false) => {
     try {
+      // 캐시가 유효하고 강제 새로고침이 아닌 경우 캐시된 데이터 반환
+      if (cache.rooms.joined && cache.isCacheValid() && !forceRefresh) {
+        console.log('Using cached joined rooms');
+        return cache.rooms.joined;
+      }
+      
+      console.log('Fetching fresh joined rooms');
       const response = await apiClient.get(`/chat/room/part?page=${page}&size=${size}`);
+      
+      // 성공적인 응답인 경우 캐시 업데이트
+      if (response.success) {
+        cache.rooms.joined = response;
+        cache.rooms.timestamp = Date.now();
+      }
+      
       return response;
     } catch (error) {
       console.error('Error fetching joined rooms:', error);
@@ -78,7 +145,7 @@ const ChatService = {
     }
   },
 
-  // 채팅방 생성
+  // 채팅방 생성 - 캐시 초기화
   createRoom: async (title, userCountMax) => {
     try {
       console.log('Creating room with:', { title, userCountMax: parseInt(userCountMax) });
@@ -87,6 +154,12 @@ const ChatService = {
         userCountMax: parseInt(userCountMax)  // 반드시 정수로 변환
       });
       console.log('Create room response:', response);
+      
+      // 채팅방이 생성되면 모든 캐시 초기화
+      if (response && !response.errorCode) {
+        cache.clearCache();
+      }
+      
       return response;
     } catch (error) {
       console.error('Error creating room:', error);
@@ -94,10 +167,16 @@ const ChatService = {
     }
   },
 
-  // 채팅방 입장
+  // 채팅방 입장 - 참여 캐시 초기화
   joinRoom: async (roomId) => {
     try {
       const response = await apiClient.post(`/chat/room/join/${roomId}`);
+      
+      // 채팅방 참여 성공 시 참여 목록 캐시 초기화
+      if (response && !response.errorCode) {
+        cache.rooms.joined = null;
+      }
+      
       return response;
     } catch (error) {
       console.error('Error joining room:', error);
@@ -105,10 +184,16 @@ const ChatService = {
     }
   },
 
-  // 채팅방 나가기
+  // 채팅방 나가기 - 캐시 초기화
   leaveRoom: async (roomId) => {
     try {
       const response = await apiClient.delete(`/chat/room/out/${roomId}`);
+      
+      // 채팅방 나가기 성공 시 모든 캐시 초기화
+      if (response && !response.errorCode) {
+        cache.clearCache();
+      }
+      
       return response;
     } catch (error) {
       console.error('Error leaving room:', error);
@@ -116,10 +201,16 @@ const ChatService = {
     }
   },
 
-  // 채팅방 삭제
+  // 채팅방 삭제 - 캐시 초기화
   deleteRoom: async (roomId) => {
     try {
       const response = await apiClient.delete(`/chat/room/delete/${roomId}`);
+      
+      // 채팅방 삭제 성공 시 모든 캐시 초기화
+      if (response && !response.errorCode) {
+        cache.clearCache();
+      }
+      
       return response;
     } catch (error) {
       console.error('Error deleting room:', error);
