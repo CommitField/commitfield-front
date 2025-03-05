@@ -5,14 +5,14 @@ import { Leaf, Sun, Wind, Snowflake, MessageSquare } from 'lucide-react';
 import NotificationModal from '../modals/NotificationModal';
 import { FaBell } from 'react-icons/fa';
 import './CommitStats.css';
-import'../modals/NotificationModal.css';
+import '../modals/NotificationModal.css';
 
 const Home = () => {
   // 알림 모달
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [hasNewNotification, setHasNewNotification] = useState(false);
-  
+
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
     if (isModalOpen) {
@@ -24,7 +24,7 @@ const Home = () => {
     const fetchNotifications = async () => {
       try {
         const response = await fetch('/api/notifications', { credentials: 'include' });
-        if (!response.ok) {  
+        if (!response.ok) {
           throw new Error('알림 데이터를 가져오는데 실패했습니다');
         }
 
@@ -189,10 +189,10 @@ const Home = () => {
             {/* 채팅 버튼 추가 */}
             <button
               onClick={goToChat}
-              style={{ 
-                backgroundColor: '#3b82f6', 
-                borderRadius: '6px', 
-                padding: '8px 16px', 
+              style={{
+                backgroundColor: '#3b82f6',
+                borderRadius: '6px',
+                padding: '8px 16px',
                 border: 'none',
                 display: 'flex',
                 alignItems: 'center',
@@ -202,20 +202,16 @@ const Home = () => {
               <MessageSquare size={18} />
               <span>채팅방</span>
             </button>
+
             <button
               onClick={handleLogout}
               style={{ backgroundColor: 'black', borderRadius: '6px', padding: '8px 16px', border: 'none' }}
+            >로그아웃
+            </button>
 
-          <button onClick={toggleModal} className="notification-btn">
-        <FaBell className="notification-icon" />
-        {hasNewNotification && <span className="notification-badge"></span>}
-      </button>
-            <button
-              onClick={handleLogout}
-              className="logout-btn"
-
-            >
-              로그아웃
+            <button onClick={toggleModal} className="notification-btn">
+              <FaBell className="notification-icon" />
+              {hasNewNotification && <span className="notification-badge"></span>}
             </button>
           </div>
         </div>
@@ -236,10 +232,10 @@ const Home = () => {
               <div className="stat-label">Total Contributions</div>
               <div className="stat-sublabel">전체 기간</div>
             </div>
-            
+
             {/* 구분선 */}
             <div className="divider"></div>
-            
+
             {/* 현재 연속 */}
             <div className="stat-column">
               <div className="stat-value current-streak">
@@ -248,10 +244,10 @@ const Home = () => {
               <div className="stat-label current-streak-label">Current Streak</div>
               <div className="stat-sublabel">최근 {totalCommitData?.currentStreakDays}일 연속</div>
             </div>
-            
+
             {/* 구분선 */}
             <div className="divider"></div>
-            
+
             {/* 최장 연속 */}
             <div className="stat-column">
               <div className="stat-value">
@@ -289,8 +285,8 @@ const Home = () => {
 
                 const totalSeasonContributions = data.totalCommitContributions + data.restrictedContributionsCount;
                 let rowClass = '';
-                
-                switch(season) {
+
+                switch (season) {
                   case 'spring': rowClass = 'row-spring'; break;
                   case 'summer': rowClass = 'row-summer'; break;
                   case 'fall': rowClass = 'row-fall'; break;
