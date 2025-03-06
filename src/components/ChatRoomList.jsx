@@ -1,20 +1,25 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Route, Routes } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import ChatService from '../services/ChatService';
-import ChatRoom from './ChatRoom'; // 채팅방 컴포넌트 import
+import ChatRoom from './ChatRoom';
+import PasswordModal from './PasswordModal';
 import './ChatStyles.css';
 
 const ChatRoomList = () => {
     const [rooms, setRooms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('all'); // 'all', 'created', 'joined'
-    const [refreshTrigger, setRefreshTrigger] = useState(0); // 목록 새로고침을 위한 트리거
-    const [selectedRoomId, setSelectedRoomId] = useState(null); // 선택된 채팅방 ID
+    const [activeTab, setActiveTab] = useState('all');
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [selectedRoomId, setSelectedRoomId] = useState(null);
+    // 비밀번호 처리를 위한 상태 변수
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [roomToJoin, setRoomToJoin] = useState(null);
+    const [passwordError, setPasswordError] = useState('');
     const navigate = useNavigate();
     const location = useLocation();
 
-    // 채팅방 목록 불러오기 함수 - 페이지네이션 제거
+    // 채팅방 목록 불러오기 함수
     const loadRooms = async () => {
         setLoading(true);
         try {
@@ -55,7 +60,47 @@ const ChatRoomList = () => {
     };
 
     // 채팅방 입장 처리
+
+    // 채팅방 입장 처리 (기존 메서드 수정)
     const handleJoinRoom = async (roomId) => {
+        try {
+            // 이미 선택된 방이면 무시
+            if (selectedRoomId === roomId) {
+                return;
+            }
+
+            // 선택한 방 객체 찾기
+            const selectedRoom = rooms.find(room => room.id === roomId);
+
+            // 방이 존재하지 않으면 오류
+            if (!selectedRoom) {
+                alert('채팅방을 찾을 수 없습니다.');
+                return;
+            }
+
+            // 비공개 방인지 확인
+            if (selectedRoom.isPrivate) {
+                // 비공개 방이면 비밀번호 모달 표시
+                setPasswordError('');  // 이전 오류 메시지 초기화
+                setRoomToJoin({
+                    id: roomId,
+                    title: selectedRoom.title || `채팅방 ${roomId}`
+                });
+                setShowPasswordModal(true);
+                return;
+            }
+
+            // 비공개 방이 아니면 바로 입장
+            await joinRoomDirectly(roomId);
+        } catch (err) {
+            console.error('Error checking room info:', err);
+            alert('채팅방 정보를 가져오는데 실패했습니다.');
+        }
+    };
+
+
+    // 비밀번호 없이 바로 입장
+    const joinRoomDirectly = async (roomId) => {
         try {
             // 채팅방 ID를 상태에 저장
             setSelectedRoomId(roomId);
@@ -79,6 +124,41 @@ const ChatRoomList = () => {
             console.error('Error joining room:', err);
             alert('채팅방 참여에 실패했습니다.');
         }
+    };
+
+    // 비밀번호 입력 후 제출 처리
+    const handlePasswordSubmit = async (password) => {
+        try {
+            if (!roomToJoin) return;
+
+            setPasswordError('');  // 오류 메시지 초기화
+
+            // 비밀번호로 채팅방 입장 시도
+            await ChatService.joinRoomWithPassword(roomToJoin.id, password);
+
+            // 비밀번호 모달 닫기
+            setShowPasswordModal(false);
+
+            // 채팅방 입장
+            setSelectedRoomId(roomToJoin.id);
+
+            // URL 업데이트
+            navigate(`/chat-rooms/${roomToJoin.id}`, { replace: true });
+
+            // roomToJoin 초기화
+            setRoomToJoin(null);
+        } catch (err) {
+            // 비밀번호 오류 처리
+            setPasswordError(err.message || '비밀번호가 올바르지 않습니다.');
+            // 로딩 상태 해제는 PasswordModal에서 처리
+        }
+    };
+
+    // 비밀번호 모달 취소
+    const handlePasswordCancel = () => {
+        setShowPasswordModal(false);
+        setRoomToJoin(null);
+        setPasswordError('');
     };
 
     // 채팅방 나가기 콜백 함수 (ChatRoom 컴포넌트에서 호출)
@@ -175,15 +255,20 @@ const ChatRoomList = () => {
     // Check if room list is empty
     const isRoomsEmpty = rooms.length === 0;
 
-    const refreshRoomList = () => {
-        console.log('채팅방 목록 새로고침');
-        setRefreshTrigger(prev => prev + 1); // 이 트리거로 목록 리로드
-    };
-
     return (
         <div className="chat-layout">
             {/* 채팅방 목록 컨테이너 */}
             <div className="chat-list-container">
+                {/* 새로고침/생성 버튼 */}
+                <div className="chat-action-buttons">
+                    <div className="refresh-btn" onClick={handleRefresh} title="새로고침">
+                        <i className="fa-solid fa-arrows-rotate"></i>새로고침
+                    </div>
+                    <div className="create-room-btn" onClick={handleCreateRoom}>
+                        <i className="fa-solid fa-plus"></i>생성
+                    </div>
+                </div>
+
                 {/* 채팅방 목록 헤더 */}
                 <div className="chat-tabs">
                     <div
@@ -235,11 +320,13 @@ const ChatRoomList = () => {
                                 onClick={() => handleJoinRoom(room.id)}
                             >
                                 <div className="profile-img">
-                                    {/* 프로필 이미지가 있다면 여기에 표시 */}
+                                    {/* 프로필 이미지 또는 잠금 아이콘 표시 */}
+                                    {room.isPrivate && <i className="fa-solid fa-lock" style={{ color: '#e74c3c' }}></i>}
                                 </div>
                                 <div className="chat-info">
                                     <div className="chat-name">
                                         {room.title}
+                                        {room.isPrivate && <span className="private-badge">비공개</span>}
                                     </div>
                                     <div className="room-stats">
                                         참여 인원: {room.currentUserCount}/{room.userCountMax}
@@ -249,16 +336,6 @@ const ChatRoomList = () => {
                         ))}
                     </div>
                 )}
-
-                {/* 채팅방 생성 버튼 */}
-                <div className="create-room-btn" onClick={handleCreateRoom}>
-                    <i className="fa-solid fa-plus">생성</i>
-                </div>
-
-                {/* 새로고침 버튼 */}
-                <div className="refresh-btn" onClick={handleRefresh} title="새로고침">
-                    <i className="fa-solid fa-arrows-rotate">새로고침</i>
-                </div>
             </div>
 
             {/* 채팅창 영역 - 우측 검은 영역 */}
@@ -268,16 +345,24 @@ const ChatRoomList = () => {
                         key={selectedRoomId}
                         roomId={selectedRoomId}
                         onLeaveRoom={handleLeaveRoom}
-                        refreshRooms={handleRefresh} // 이렇게 새로고침 함수 전달
+                        refreshRooms={handleRefresh}
                     />
                 ) : (
                     <div className="empty-state">
                         <p>채팅방을 선택해주세요</p>
                     </div>
                 )}
-
-
             </div>
+
+            {/* 비밀번호 입력 모달 */}
+            {showPasswordModal && roomToJoin && (
+                <PasswordModal
+                    roomTitle={roomToJoin.title}
+                    onSubmit={handlePasswordSubmit}
+                    onCancel={handlePasswordCancel}
+                    error={passwordError}
+                />
+            )}
         </div>
     );
 };

@@ -1,4 +1,3 @@
-// src/services/ChatService.js
 import axios from 'axios';
 import { API_BACKEND_URL } from '../config';
 
@@ -186,7 +185,7 @@ const ChatService = {
 
       // 비밀번호가 있는 경우와 없는 경우 분리
       const requestBody = password ? { password } : {};
-      
+
       const response = await apiClient.post(`/chat/room/join/${roomId}`, requestBody);
       console.log('방 참여 응답:', response);
 
@@ -215,7 +214,7 @@ const ChatService = {
       if (response && !response.errorCode) {
         // 참여한 방 목록 캐시만 초기화
         cache.clearJoinedRoomsCache();
-        
+
         // localStorage에 플래그 설정: 참여한 방 목록만 새로고침
         localStorage.setItem('refreshJoinedOnly', 'true');
         localStorage.setItem('chatRoomChanged', Date.now().toString());
@@ -294,6 +293,159 @@ const ChatService = {
       return response;
     } catch (error) {
       console.error('Error sending message:', error);
+      throw error;
+    }
+  },
+
+  // // 채팅방 정보 가져오기 (비공개 여부 확인용)
+  // getRoomInfo: async (roomId) => {
+  //   try {
+  //     // 채팅방 목록 API를 활용하여 정보 가져오기
+  //     const response = await ChatService.getRoomList();
+
+  //     // 모든 채팅방 중에서 해당 ID의 채팅방 찾기
+  //     const room = response.data.find(r => r.id === parseInt(roomId));
+
+  //     if (!room) {
+  //       throw new Error('채팅방을 찾을 수 없습니다.');
+  //     }
+
+  //     return {
+  //       id: room.id,
+  //       title: room.title,
+  //       isPrivate: room.isPrivate || false, // 이 필드가 API 응답에 없을 수 있음
+  //       currentUserCount: room.currentUserCount,
+  //       userCountMax: room.userCountMax
+  //     };
+  //   } catch (error) {
+  //     console.error('Error getting room info:', error);
+  //     throw error;
+  //   }
+  // },
+
+  // // 채팅방 입장 (비밀번호 포함)
+  // joinRoomWithPassword: async (roomId, password) => {
+  //   try {
+  //     // URL 경로 수정 - "/api/" 제거
+  //     const response = await fetch(`/chat/room/join/${roomId}`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json'
+  //       },
+  //       body: JSON.stringify({
+  //         title: '',
+  //         userCountMax: 0,
+  //         password: password
+  //       })
+  //     });
+
+  //     if (!response.ok) {
+  //       const errorText = await response.text();
+  //       console.error('Server response:', errorText);
+  //       throw new Error(response.status === 500 ? '서버 내부 오류가 발생했습니다.' : '비밀번호가 올바르지 않습니다.');
+  //     }
+
+  //     const data = await response.json();
+
+  //     // 참여한 방 새로고침 플래그
+  //     localStorage.setItem('refreshJoinedOnly', 'true');
+  //     localStorage.setItem('chatRoomChanged', Date.now().toString());
+
+  //     return data;
+  //   } catch (error) {
+  //     console.error('Error joining room with password:', error);
+  //     throw error;
+  //   }
+  // }
+
+  // ChatService.js에 추가할 비밀번호 체크 기능
+
+  // 채팅방 입장 (비밀번호 포함)
+  joinRoomWithPassword: async (roomId, password) => {
+    try {
+      // ChatRoomRequest 형식에 맞게 요청 바디 작성
+      const requestBody = {
+        title: '',             // 필수 필드지만 입장 시에는 불필요
+        userCountMax: 0,       // 필수 필드지만 입장 시에는 불필요
+        password: password     // 비밀번호 전송
+      };
+
+      // POST 요청으로 채팅방 입장 시도
+      const response = await fetch(`/chat/room/join/${roomId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      // 응답 처리
+      const responseData = await response.json();
+
+      // 응답이 성공이 아닌 경우 (비밀번호 오류 등)
+      if (!response.ok) {
+        let errorMessage = '채팅방 입장에 실패했습니다.';
+
+        // 서버에서 반환한 오류 코드에 따라 메시지 설정
+        if (responseData && responseData.errorCode) {
+          switch (responseData.errorCode) {
+            case 'ROOM_PASSWORD_MISMATCH':
+              errorMessage = '비밀번호가 일치하지 않습니다.';
+              break;
+            case 'NEED_TO_PASSWORD':
+              errorMessage = '비밀번호가 필요한 채팅방입니다.';
+              break;
+            case 'ROOM_USER_FULL':
+              errorMessage = '채팅방이 가득 찼습니다.';
+              break;
+            case 'ALREADY_JOIN_ROOM':
+              errorMessage = '이미 참여 중인 채팅방입니다.';
+              break;
+            default:
+              errorMessage = responseData.message || errorMessage;
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      // 성공적으로 입장한 경우, 채팅방 목록 새로고침을 위한 플래그 설정
+      localStorage.setItem('refreshJoinedOnly', 'true');
+      localStorage.setItem('chatRoomChanged', Date.now().toString());
+
+      return responseData;
+    } catch (error) {
+      console.error('Error joining room with password:', error);
+      throw error;
+    }
+  },
+
+  // 기존 ChatRoomList.jsx에서 사용하는 방식을 활용한 방 정보 조회
+  getRoomInfo: async (roomId) => {
+    try {
+      // 현재 채팅방 목록에서 해당 방 찾기 (추가 API 호출 없이)
+      const roomListResponse = await ChatService.getRoomList();
+
+      if (!roomListResponse.success && !roomListResponse.data) {
+        throw new Error('채팅방 목록을 불러오는데 실패했습니다.');
+      }
+
+      const rooms = roomListResponse.data || [];
+      const room = rooms.find(r => r.id === parseInt(roomId));
+
+      if (!room) {
+        throw new Error('채팅방을 찾을 수 없습니다.');
+      }
+
+      return {
+        id: room.id,
+        title: room.title,
+        isPrivate: room.isPrivate || false,  // 이 필드는 API 응답에 포함되어야 함
+        currentUserCount: room.currentUserCount,
+        userCountMax: room.userCountMax
+      };
+    } catch (error) {
+      console.error('Error getting room info:', error);
       throw error;
     }
   }
