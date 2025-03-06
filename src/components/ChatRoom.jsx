@@ -4,8 +4,9 @@ import ChatService from '../services/ChatService';
 import webSocketService from '../services/WebSocketService';
 import './ChatStyles.css';
 
-const ChatRoom = () => {
-    const { roomId } = useParams();
+const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
+    const { roomId: paramRoomId } = useParams();
+    const roomId = propRoomId || paramRoomId; // 속성으로 받은 값 우선, 없으면 URL 파라미터 사용
     const navigate = useNavigate();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
@@ -27,6 +28,10 @@ const ChatRoom = () => {
     const roomIdInt = parseInt(roomId);
     const [wsConnectionRetries, setWsConnectionRetries] = useState(0);
     const maxWsRetries = 5;
+    const prevRoomIdRef = useRef(null);
+
+    // Cache key for stored messages
+    const getChatStorageKey = (roomId) => `chat_messages_${roomId}`;
 
     // Fetch room details including creator info
     const fetchRoomDetails = async () => {
@@ -35,7 +40,7 @@ const ChatRoom = () => {
             if (createdRooms && createdRooms.data) {
                 const isCreator = createdRooms.data.some(room => room.id === roomIdInt);
                 setIsRoomCreator(isCreator);
-                
+
                 // 룸 정보 가져오기
                 const roomData = createdRooms.data.find(room => room.id === roomIdInt);
                 if (roomData) {
@@ -54,22 +59,62 @@ const ChatRoom = () => {
         }
     };
 
+    // Save chat messages to localStorage
+    const saveChatMessages = (roomId, messages) => {
+        try {
+            if (messages && messages.length > 0) {
+                // Only save the most recent 100 messages to prevent exceeding storage limits
+                const messagesToSave = messages.slice(-100);
+                localStorage.setItem(getChatStorageKey(roomId), JSON.stringify(messagesToSave));
+            }
+        } catch (error) {
+            console.error('Error saving chat messages to localStorage:', error);
+        }
+    };
+
+    // Load chat messages from localStorage
+    const loadCachedMessages = (roomId) => {
+        try {
+            const cachedMessages = localStorage.getItem(getChatStorageKey(roomId));
+            if (cachedMessages) {
+                return JSON.parse(cachedMessages);
+            }
+        } catch (error) {
+            console.error('Error loading cached chat messages:', error);
+        }
+        return null;
+    };
+
     // 메시지 목록을 로드하는 함수
     const loadMessages = async () => {
         try {
             console.log('Loading messages for room:', roomId, 'lastId:', lastMessageId);
             setLoading(true);
 
+            // First check if we have cached messages
+            const cachedMessages = loadCachedMessages(roomId);
+            if (cachedMessages && lastMessageId === null) {
+                console.log('Using cached messages');
+                setMessages(cachedMessages);
+            }
+
             const response = await ChatService.getChatMessages(roomId, lastMessageId);
             console.log('Messages response:', response);
 
             if (response && response.success) {
                 if (lastMessageId === null) {
-                    // 초기 로드
-                    setMessages(response.data || []);
+                    // Replace existing messages only if we got new messages from server
+                    if (response.data && response.data.length > 0) {
+                        setMessages(response.data || []);
+                        // Save to localStorage
+                        saveChatMessages(roomId, response.data);
+                    }
                 } else {
                     // 추가 메시지 로드 (페이지네이션)
-                    setMessages(prevMessages => [...response.data, ...prevMessages]);
+                    const newMessages = [...response.data, ...messages];
+                    setMessages(newMessages);
+                    // Save combined messages to localStorage
+                    saveChatMessages(roomId, newMessages);
                 }
 
                 // 마지막 메시지 ID 업데이트
@@ -80,9 +125,9 @@ const ChatRoom = () => {
 
                 setError(null);
             } else {
-                if (lastMessageId === null) {
+                if (lastMessageId === null && (!cachedMessages || cachedMessages.length === 0)) {
                     setMessages([]);
-                    
+
                     // 응답이 성공이 아니지만 오류가 아닌 경우 (예: 메시지가 없는 경우)
                     if (response && response.message) {
                         console.log('No messages or other condition:', response.message);
@@ -92,7 +137,7 @@ const ChatRoom = () => {
         } catch (err) {
             console.error('Error loading messages:', err);
 
-            if (lastMessageId === null) {
+            if (lastMessageId === null && (!cachedMessages || cachedMessages.length === 0)) {
                 // 초기 로드 실패만 에러로 표시
                 setError('메시지를 불러오는데 실패했습니다.');
                 setMessages([]); // 빈 메시지 배열로 설정
@@ -122,7 +167,11 @@ const ChatRoom = () => {
         };
 
         // 메시지 목록에 바로 추가 (낙관적 UI 업데이트)
-        setMessages(prevMessages => [...prevMessages, newMsg]);
+        const updatedMessages = [...messages, newMsg];
+        setMessages(updatedMessages);
+
+        // 로컬 스토리지에 메시지 저장
+        saveChatMessages(roomId, updatedMessages);
 
         // 메시지 전송 시도 
         try {
@@ -148,14 +197,16 @@ const ChatRoom = () => {
                 } catch (apiErr) {
                     console.error('REST API send failed:', apiErr);
                     // 실패 알림 표시 (기존 메시지는 유지)
-                    setMessages(prevMessages => 
-                        prevMessages.map(msg => 
-                            msg.chatMsgId === newMsg.chatMsgId
-                                ? {...msg, failed: true, failReason: '전송 실패'}
-                                : msg
-                        )
+                    const failedMessages = messages.map(msg =>
+                        msg.chatMsgId === newMsg.chatMsgId
+                            ? { ...msg, failed: true, failReason: '전송 실패' }
+                            : msg
                     );
-                    
+                    setMessages(failedMessages);
+
+                    // Update localStorage with failed status
+                    saveChatMessages(roomId, failedMessages);
+
                     // 사용자에게 알림
                     alert(apiErr.message || '메시지 전송에 실패했습니다.');
                 }
@@ -163,14 +214,16 @@ const ChatRoom = () => {
         } catch (err) {
             console.error('Error in message send flow:', err);
             // 실패 표시 추가
-            setMessages(prevMessages => 
-                prevMessages.map(msg => 
-                    msg.chatMsgId === newMsg.chatMsgId
-                        ? {...msg, failed: true, failReason: '전송 실패'}
-                        : msg
-                )
+            const failedMessages = messages.map(msg =>
+                msg.chatMsgId === newMsg.chatMsgId
+                    ? { ...msg, failed: true, failReason: '전송 실패' }
+                    : msg
             );
-            
+            setMessages(failedMessages);
+
+            // Update localStorage with failed status
+            saveChatMessages(roomId, failedMessages);
+
             // 사용자에게 알림
             alert('메시지 전송에 실패했습니다.');
         }
@@ -181,43 +234,31 @@ const ChatRoom = () => {
         // 이미 액션이 진행 중이면 중복 실행 방지
         if (actionInProgress) return;
 
+        // Confirm before deleting
+        if (!window.confirm('채팅방을 정말 나가시겠습니까?')) {
+            return;
+        }
+
         setActionInProgress(true); // 액션 시작
 
+        // 먼저 UI 업데이트
+        if (onLeaveRoom) {
+            onLeaveRoom();
+        }
+
         try {
-            const response = await ChatService.leaveRoom(roomId);
-            if (response && response.success) {
-                // 웹소켓 연결 해제
-                webSocketService.unsubscribeFromRoom(roomIdInt);
+            // 백그라운드에서 서버 요청 처리
+            await ChatService.leaveRoom(roomId);
 
-                // localStorage에 이벤트 기록 (목록 새로고침용)
-                localStorage.setItem('chatRoomChanged', Date.now().toString());
+            // 웹소켓 연결 해제
+            webSocketService.unsubscribeFromRoom(roomIdInt);
 
-                // 리다이렉트 방법 강화: React Router와 window.location 모두 사용
-                try {
-                    // 1. React Router의 navigate 사용 시도
-                    navigate('/chat-rooms', { replace: true });
-
-                    // 2. 페이지 이동이 실패할 경우를 대비해 직접 URL 이동
-                    setTimeout(() => {
-                        // 현재 URL과 이동할 URL을 비교하여 이동이 안 된 경우에만 실행
-                        if (!window.location.pathname.includes('/chat-rooms')) {
-                            console.log('React Router 이동 실패, window.location 사용');
-                            window.location.href = '/chat-rooms';
-                        }
-                    }, 300);
-                } catch (navError) {
-                    console.error('Navigation error:', navError);
-                    // 어떤 이유로든 navigate가 실패하면 window.location 사용
-                    window.location.href = '/chat-rooms';
-                }
-            } else {
-                alert(response?.message || '채팅방을 나가는데 실패했습니다.');
-                setActionInProgress(false); // 실패 시 액션 상태 초기화
+            // 목록 새로고침
+            if (refreshRooms) {
+                refreshRooms();
             }
         } catch (err) {
             console.error('Error leaving room:', err);
-            alert(err?.message || '채팅방을 나가는데 실패했습니다.');
-            setActionInProgress(false); // 실패 시 액션 상태 초기화
         }
     };
 
@@ -233,41 +274,27 @@ const ChatRoom = () => {
 
         setActionInProgress(true); // 액션 시작
 
+        // 먼저 UI 업데이트
+        if (onLeaveRoom) {
+            onLeaveRoom();
+        }
+
         try {
-            const response = await ChatService.deleteRoom(roomId);
-            if (response && response.success) {
-                // 웹소켓 연결 해제
-                webSocketService.unsubscribeFromRoom(roomIdInt);
+            // 백그라운드에서 서버 요청 처리
+            await ChatService.deleteRoom(roomId);
 
-                // localStorage에 이벤트 기록 (목록 새로고침용)
-                localStorage.setItem('chatRoomChanged', Date.now().toString());
+            // 웹소켓 연결 해제
+            webSocketService.unsubscribeFromRoom(roomIdInt);
 
-                // 리다이렉트 방법 강화: React Router와 window.location 모두 사용
-                try {
-                    // 1. React Router의 navigate 사용 시도
-                    navigate('/chat-rooms', { replace: true });
+            // 채팅방 삭제 시 로컬 스토리지의 메시지도 삭제
+            localStorage.removeItem(getChatStorageKey(roomId));
 
-                    // 2. 페이지 이동이 실패할 경우를 대비해 직접 URL 이동
-                    setTimeout(() => {
-                        // 현재 URL과 이동할 URL을 비교하여 이동이 안 된 경우에만 실행
-                        if (!window.location.pathname.includes('/chat-rooms')) {
-                            console.log('React Router 이동 실패, window.location 사용');
-                            window.location.href = '/chat-rooms';
-                        }
-                    }, 300);
-                } catch (navError) {
-                    console.error('Navigation error:', navError);
-                    // 어떤 이유로든 navigate가 실패하면 window.location 사용
-                    window.location.href = '/chat-rooms';
-                }
-            } else {
-                alert(response?.message || '채팅방 삭제에 실패했습니다.');
-                setActionInProgress(false); // 실패 시 액션 상태 초기화
+            // 목록 새로고침
+            if (refreshRooms) {
+                refreshRooms();
             }
         } catch (err) {
             console.error('Error deleting room:', err);
-            alert(err?.message || '채팅방 삭제에 실패했습니다.');
-            setActionInProgress(false); // 실패 시 액션 상태 초기화
         }
     };
 
@@ -310,7 +337,7 @@ const ChatRoom = () => {
             console.log('System/Control message:', message.message);
             return;
         }
-        
+
         // 에러 메시지 처리
         if (message.type === 'ERROR') {
             console.error('WebSocket error message:', message.message);
@@ -337,31 +364,37 @@ const ChatRoom = () => {
         // 중복 메시지 방지
         setMessages(prevMessages => {
             // 로컬 메시지 ID (local-*)로 시작하는 임시 메시지 대체
-            const isLocalMessage = prevMessages.some(msg => 
-                msg.chatMsgId?.toString().startsWith('local-') && 
+            const isLocalMessage = prevMessages.some(msg =>
+                msg.chatMsgId?.toString().startsWith('local-') &&
                 msg.message === newMessage.message &&
                 msg.userId === newMessage.userId
             );
-            
+
+            let updatedMessages;
             if (isLocalMessage) {
                 // 임시 메시지를 서버 메시지로 대체
-                return prevMessages.map(msg => 
-                    (msg.chatMsgId?.toString().startsWith('local-') && 
-                     msg.message === newMessage.message &&
-                     msg.userId === newMessage.userId) 
-                        ? newMessage 
+                updatedMessages = prevMessages.map(msg =>
+                    (msg.chatMsgId?.toString().startsWith('local-') &&
+                        msg.message === newMessage.message &&
+                        msg.userId === newMessage.userId)
+                        ? newMessage
                         : msg
                 );
+            } else {
+                // 이미 동일한 ID의 메시지가 있는지 확인
+                const exists = prevMessages.some(msg =>
+                    msg.chatMsgId === newMessage.chatMsgId &&
+                    !msg.chatMsgId?.toString().startsWith('local-')
+                );
+
+                if (exists) return prevMessages;
+                updatedMessages = [...prevMessages, newMessage];
             }
-            
-            // 이미 동일한 ID의 메시지가 있는지 확인
-            const exists = prevMessages.some(msg => 
-                msg.chatMsgId === newMessage.chatMsgId && 
-                !msg.chatMsgId?.toString().startsWith('local-')
-            );
-            
-            if (exists) return prevMessages;
-            return [...prevMessages, newMessage];
+
+            // 로컬 스토리지에 업데이트된 메시지 저장
+            saveChatMessages(roomId, updatedMessages);
+
+            return updatedMessages;
         });
     };
 
@@ -369,7 +402,7 @@ const ChatRoom = () => {
     const handleConnectionChange = (isConnected) => {
         setConnected(isConnected);
         console.log('WebSocket connection status:', isConnected);
-        
+
         // 연결이 되면 재시도 카운터 초기화
         if (isConnected) {
             setWsConnectionRetries(0);
@@ -382,7 +415,7 @@ const ChatRoom = () => {
             console.error(`Maximum WebSocket connection retries (${maxWsRetries}) reached`);
             return false;
         }
-        
+
         try {
             // WebSocket 연결 확인
             const isConnected = await webSocketService.ensureConnection();
@@ -391,11 +424,11 @@ const ChatRoom = () => {
                 setWsConnectionRetries(prev => prev + 1);
                 return false;
             }
-            
+
             // 방 구독 시도
             const success = await webSocketService.subscribeToRoom(roomIdInt);
             console.log('Room subscription success:', success);
-            
+
             if (success) {
                 return true;
             } else {
@@ -415,62 +448,99 @@ const ChatRoom = () => {
         fetchRoomDetails();
     }, [roomId]);
 
-    // 메시지 목록이 바뀔 때마다 스크롤을 최하단으로 이동
+
+    // 새 메시지 추가 시 조건부 스크롤 처리
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (messageListRef.current) {
+            // 스크롤이 맨 아래에 있는지 확인
+            const { scrollTop, scrollHeight, clientHeight } = messageListRef.current;
+            const isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 50;
+
+            // 본인이 보낸 새 메시지이거나 스크롤이 이미 맨 아래에 있는 경우만 자동 스크롤
+            const isOwnNewMessage = messages.length > 0 &&
+                messages[messages.length - 1].userId === userInfo.id &&
+                messages[messages.length - 1].chatMsgId?.toString().startsWith('local-');
+
+            if (isScrolledToBottom || isOwnNewMessage) {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
     }, [messages]);
+
+    const prevMessagesRef = useRef([]);
 
     // 메시지 목록 상단에 도달하면 이전 메시지 로드
     const handleScroll = () => {
         if (messageListRef.current) {
             const { scrollTop } = messageListRef.current;
             if (scrollTop === 0 && !loading && messages.length > 0) {
+                // 스크롤 위치 기억
+                const scrollHeight = messageListRef.current.scrollHeight;
+
                 // 이전 메시지 로드
-                loadMessages();
+                loadMessages().then(() => {
+                    // 이전 위치 유지 (새 메시지가 위에 추가되면 스크롤 위치 조정)
+                    if (messageListRef.current) {
+                        const newScrollHeight = messageListRef.current.scrollHeight;
+                        messageListRef.current.scrollTop = newScrollHeight - scrollHeight;
+                    }
+                });
             }
         }
     };
 
     useEffect(() => {
+        // Check if room ID has changed
+        if (prevRoomIdRef.current !== roomId) {
+            // Reset state for the new room
+            setLastMessageId(null);
+            setMessages([]);
+            setLoading(true);
+            setError(null);
+
+            // Update the ref
+            prevRoomIdRef.current = roomId;
+        }
+
         getCurrentUser();
         loadMessages();
 
         // 웹소켓 연결 및 채팅방 구독
         // 연결 상태 변경 이벤트 리스너 등록
         const unsubscribeFromConnection = webSocketService.onConnectionChange(handleConnectionChange);
-        
+
         // 메시지 수신 이벤트 리스너 등록
         const unsubscribeFromMessages = webSocketService.onMessage(handleWebSocketMessage);
 
         // 웹소켓 연결 및 구독 시도
         const initialSubscription = async () => {
             await webSocketService.connect();
-            
+
             // 구독 시도
             const subscriptionSuccess = await trySubscribeToRoom();
-            
+
             if (!subscriptionSuccess) {
                 // 첫 시도 실패 시 재시도 로직
                 let retryAttempt = 0;
                 const maxRetries = 3;
                 const retryInterval = 2000; // 2초
-                
+
                 const retrySubscription = setInterval(async () => {
                     retryAttempt++;
                     console.log(`Retrying subscription to room ${roomId}, attempt ${retryAttempt}`);
-                    
+
                     const retrySuccess = await trySubscribeToRoom();
                     if (retrySuccess || retryAttempt >= maxRetries) {
                         console.log(`Subscription retry ${retrySuccess ? 'succeeded' : 'failed after max attempts'}`);
                         clearInterval(retrySubscription);
                     }
                 }, retryInterval);
-                
+
                 // 컴포넌트 언마운트 시 인터벌 정리
                 return () => clearInterval(retrySubscription);
             }
         };
-        
+
         initialSubscription();
 
         // 컴포넌트 언마운트 시 이벤트 리스너 제거 및 구독 해제
@@ -538,119 +608,115 @@ const ChatRoom = () => {
     });
 
     return (
-        <div className="chat-layout">
-            {/* 사이드바는 상위 컴포넌트에서 렌더링한다고 가정 */}
-            
-            {/* 채팅 창 */}
-            <div className="chat-window">
-                {/* 채팅 헤더 */}
-                <div className="chat-header">
+        <div className="chat-window">
+            {/* 채팅 헤더 */}
+            <div className="chat-header">
+                <div className="room-info-container">
                     <div className="room-title">{roomInfo.title}</div>
-                    <div className="actions">
-                        <div className="connection-status">
-                            <div className={`status-indicator ${connected ? 'connected' : 'disconnected'}`}></div>
-                            <span>{connected ? '연결됨' : '연결 중...'}</span>
-                        </div>
-                        <button 
+
+                    {/* 제목 옆에 삭제/나가기 버튼 배치 */}
+                    <div className="header-actions">
+                        <button
                             className={`action-btn ${actionInProgress ? 'disabled' : ''}`}
                             onClick={leaveRoom}
                             disabled={actionInProgress}
                         >
                             <i className="fa-solid fa-right-from-bracket"></i>
-                            {actionInProgress ? '처리 중...' : '나가기'}
+                            {actionInProgress ? '처리중' : '나가기'}
                         </button>
+
                         {isRoomCreator && (
-                            <button 
+                            <button
                                 className={`action-btn delete ${actionInProgress ? 'disabled' : ''}`}
                                 onClick={deleteRoom}
                                 disabled={actionInProgress}
                             >
                                 <i className="fa-solid fa-trash"></i>
-                                {actionInProgress ? '처리 중...' : '삭제하기'}
+                                {actionInProgress ? '처리중' : '삭제하기'}
                             </button>
                         )}
+
+                        <div className="connection-status">
+                            <div className={`status-indicator ${connected ? 'connected' : 'disconnected'}`}></div>
+                            <span>{connected ? '연결됨' : '연결 중...'}</span>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                {/* 채팅 메시지 영역 */}
-                {loading && messages.length === 0 ? (
-                    <div className="loading">
-                        <div className="loading-spinner"></div>
-                        <p>로딩 중...</p>
-                    </div>
-                ) : error ? (
-                    <div className="empty-chat">
-                        <p className="text-red-500">{error}</p>
-                    </div>
-                ) : (
-                    <div
-                        className="chat-messages"
-                        ref={messageListRef}
-                        onScroll={handleScroll}
-                    >
-                        {messages.length === 0 ? (
-                            <div className="empty-chat">
-                                <p className="main-message">아직 메시지가 없습니다.</p>
-                                <p className="sub-message">첫 메시지를 보내보세요!</p>
-                            </div>
-                        ) : (
-                            <>
-                                {sortedDates.map(date => (
-                                    <div key={date}>
-                                        <div className="date-divider">
-                                            <span>{date}</span>
-                                        </div>
-                                        {groupedMessages[date].map((msg) => (
-                                            <div
-                                                key={msg.chatMsgId || `${msg.userId}-${Date.now()}-${Math.random()}`}
-                                                className={`message ${msg.userId === userInfo.id ? 'sent' : 'received'} ${msg.failed ? 'failed' : ''}`}
-                                            >
-                                                <div className="avatar">
-                                                    {/* 실제 사용자 아바타가 있으면 추가 */}
-                                                </div>
-                                                <div className="content">
-                                                    <div className="sender">{msg.nickname}</div>
-                                                    <div className="bubble">{msg.message}</div>
-                                                    <div className="time">
-                                                        {msg.sendAt ? formatTime(msg.sendAt) : ''}
-                                                        {msg.failed && <span className="error-badge" title={msg.failReason}>!</span>}
-                                                    </div>
+            {/* 채팅 메시지 영역 */}
+            {loading && messages.length === 0 ? (
+                <div className="loading">
+                    <div className="loading-spinner"></div>
+                    <p>로딩 중...</p>
+                </div>
+            ) : error ? (
+                <div className="empty-chat">
+                    <p className="text-red-500">{error}</p>
+                </div>
+            ) : (
+                <div
+                    className="chat-messages"
+                    ref={messageListRef}
+                    onScroll={handleScroll}
+                >
+                    {messages.length === 0 ? (
+                        <div className="empty-chat">
+                            <p className="main-message">아직 메시지가 없습니다.</p>
+                            <p className="sub-message">첫 메시지를 보내보세요!</p>
+                        </div>
+                    ) : (
+                        <>
+                            {sortedDates.map(date => (
+                                <div key={date}>
+                                    <div className="date-divider">
+                                        <span>{date}</span>
+                                    </div>
+                                    {groupedMessages[date].map((msg) => (
+                                        <div
+                                            key={msg.chatMsgId || `${msg.userId}-${Date.now()}-${Math.random()}`}
+                                            className={`message ${msg.userId === userInfo.id ? 'sent' : 'received'} ${msg.failed ? 'failed' : ''}`}
+                                        >
+                                            <div className="avatar">
+                                                {/* 실제 사용자 아바타가 있으면 추가 */}
+                                            </div>
+                                            <div className="content">
+                                                <div className="sender">{msg.nickname}</div>
+                                                <div className="bubble">{msg.message}</div>
+                                                <div className="time">
+                                                    {msg.sendAt ? formatTime(msg.sendAt) : ''}
+                                                    {msg.failed && <span className="error-badge" title={msg.failReason}>!</span>}
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                ))}
-                                <div ref={messagesEndRef} />
-                            </>
-                        )}
-                    </div>
-                )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </>
+                    )}
+                </div>
+            )}
 
-                {/* 채팅 입력 영역 */}
-                <form onSubmit={sendMessage} className="chat-input">
-                    <button type="button" className="emoji-btn">
-                        <i className="fa-regular fa-face-smile"></i>
-                    </button>
-                    <button type="button" className="attach-btn">
-                        <i className="fa-solid fa-paperclip"></i>
-                    </button>
-                    <input
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="메시지를 입력하세요"
-                        maxLength={300}
-                        disabled={actionInProgress || !connected}
-                    />
-                    <button
-                        type="submit"
-                        className="send-btn"
-                        disabled={!newMessage.trim() || actionInProgress || !connected}
-                    >
-                        <i className="fa-solid fa-paper-plane"></i>
-                    </button>
-                </form>
-            </div>
+            {/* 채팅 입력 영역 */}
+            <form onSubmit={sendMessage} className="chat-input">
+                <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="메시지를 입력하세요"
+                    maxLength={300}
+                    disabled={actionInProgress || !connected}
+                />
+                <button
+                    type="submit"
+                    className="send-btn"
+                    disabled={!newMessage.trim() || actionInProgress || !connected}
+                >
+                    <i className="fa-solid fa-paper-plane"></i>
+                    전송
+                </button>
+            </form>
         </div>
     );
 };
