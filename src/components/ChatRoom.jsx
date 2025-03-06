@@ -4,8 +4,9 @@ import ChatService from '../services/ChatService';
 import webSocketService from '../services/WebSocketService';
 import './ChatStyles.css';
 
-const ChatRoom = () => {
-    const { roomId } = useParams();
+const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
+    const { roomId: paramRoomId } = useParams();
+    const roomId = propRoomId || paramRoomId; // 속성으로 받은 값 우선, 없으면 URL 파라미터 사용
     const navigate = useNavigate();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
@@ -235,42 +236,24 @@ const ChatRoom = () => {
 
         setActionInProgress(true); // 액션 시작
 
+        // 먼저 UI 업데이트
+        if (onLeaveRoom) {
+            onLeaveRoom();
+        }
+
         try {
-            const response = await ChatService.leaveRoom(roomId);
-            if (response && response.success) {
-                // 웹소켓 연결 해제
-                webSocketService.unsubscribeFromRoom(roomIdInt);
+            // 백그라운드에서 서버 요청 처리
+            await ChatService.leaveRoom(roomId);
 
-                // 방 목록 업데이트 이벤트 트리거
-                localStorage.setItem('chatRoomChanged', Date.now().toString());
-                localStorage.setItem('refreshJoinedOnly', 'true'); // 참여 목록만 갱신하도록 플래그 설정
+            // 웹소켓 연결 해제
+            webSocketService.unsubscribeFromRoom(roomIdInt);
 
-                // 리다이렉트 방법 강화: React Router와 window.location 모두 사용
-                try {
-                    // 1. React Router의 navigate 사용 시도
-                    navigate('/chat-rooms', { replace: true });
-
-                    // 2. 페이지 이동이 실패할 경우를 대비해 직접 URL 이동
-                    setTimeout(() => {
-                        // 현재 URL과 이동할 URL을 비교하여 이동이 안 된 경우에만 실행
-                        if (!window.location.pathname.includes('/chat-rooms')) {
-                            console.log('React Router 이동 실패, window.location 사용');
-                            window.location.href = '/chat-rooms';
-                        }
-                    }, 300);
-                } catch (navError) {
-                    console.error('Navigation error:', navError);
-                    // 어떤 이유로든 navigate가 실패하면 window.location 사용
-                    window.location.href = '/chat-rooms';
-                }
-            } else {
-                alert(response?.message || '채팅방을 나가는데 실패했습니다.');
-                setActionInProgress(false); // 실패 시 액션 상태 초기화
+            // 목록 새로고침
+            if (refreshRooms) {
+                refreshRooms();
             }
         } catch (err) {
             console.error('Error leaving room:', err);
-            alert(err?.message || '채팅방을 나가는데 실패했습니다.');
-            setActionInProgress(false); // 실패 시 액션 상태 초기화
         }
     };
 
@@ -286,44 +269,27 @@ const ChatRoom = () => {
 
         setActionInProgress(true); // 액션 시작
 
+        // 먼저 UI 업데이트
+        if (onLeaveRoom) {
+            onLeaveRoom();
+        }
+
         try {
-            const response = await ChatService.deleteRoom(roomId);
-            if (response && response.success) {
-                // 웹소켓 연결 해제
-                webSocketService.unsubscribeFromRoom(roomIdInt);
+            // 백그라운드에서 서버 요청 처리
+            await ChatService.deleteRoom(roomId);
 
-                // 채팅방 삭제 시 로컬 스토리지의 메시지도 삭제
-                localStorage.removeItem(getChatStorageKey(roomId));
+            // 웹소켓 연결 해제
+            webSocketService.unsubscribeFromRoom(roomIdInt);
 
-                // 방 목록 업데이트 이벤트 트리거 - 모든 목록 갱신 (삭제이므로)
-                localStorage.setItem('chatRoomChanged', Date.now().toString());
+            // 채팅방 삭제 시 로컬 스토리지의 메시지도 삭제
+            localStorage.removeItem(getChatStorageKey(roomId));
 
-                // 리다이렉트 방법 강화: React Router와 window.location 모두 사용
-                try {
-                    // 1. React Router의 navigate 사용 시도
-                    navigate('/chat-rooms', { replace: true });
-
-                    // 2. 페이지 이동이 실패할 경우를 대비해 직접 URL 이동
-                    setTimeout(() => {
-                        // 현재 URL과 이동할 URL을 비교하여 이동이 안 된 경우에만 실행
-                        if (!window.location.pathname.includes('/chat-rooms')) {
-                            console.log('React Router 이동 실패, window.location 사용');
-                            window.location.href = '/chat-rooms';
-                        }
-                    }, 300);
-                } catch (navError) {
-                    console.error('Navigation error:', navError);
-                    // 어떤 이유로든 navigate가 실패하면 window.location 사용
-                    window.location.href = '/chat-rooms';
-                }
-            } else {
-                alert(response?.message || '채팅방 삭제에 실패했습니다.');
-                setActionInProgress(false); // 실패 시 액션 상태 초기화
+            // 목록 새로고침
+            if (refreshRooms) {
+                refreshRooms();
             }
         } catch (err) {
             console.error('Error deleting room:', err);
-            alert(err?.message || '채팅방 삭제에 실패했습니다.');
-            setActionInProgress(false); // 실패 시 액션 상태 초기화
         }
     };
 
@@ -477,18 +443,43 @@ const ChatRoom = () => {
         fetchRoomDetails();
     }, [roomId]);
 
-    // 메시지 목록이 바뀔 때마다 스크롤을 최하단으로 이동
+
+    // 새 메시지 추가 시 조건부 스크롤 처리
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (messageListRef.current) {
+            // 스크롤이 맨 아래에 있는지 확인
+            const { scrollTop, scrollHeight, clientHeight } = messageListRef.current;
+            const isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 50;
+
+            // 본인이 보낸 새 메시지이거나 스크롤이 이미 맨 아래에 있는 경우만 자동 스크롤
+            const isOwnNewMessage = messages.length > 0 &&
+                messages[messages.length - 1].userId === userInfo.id &&
+                messages[messages.length - 1].chatMsgId?.toString().startsWith('local-');
+
+            if (isScrolledToBottom || isOwnNewMessage) {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
     }, [messages]);
+
+    const prevMessagesRef = useRef([]);
 
     // 메시지 목록 상단에 도달하면 이전 메시지 로드
     const handleScroll = () => {
         if (messageListRef.current) {
             const { scrollTop } = messageListRef.current;
             if (scrollTop === 0 && !loading && messages.length > 0) {
+                // 스크롤 위치 기억
+                const scrollHeight = messageListRef.current.scrollHeight;
+
                 // 이전 메시지 로드
-                loadMessages();
+                loadMessages().then(() => {
+                    // 이전 위치 유지 (새 메시지가 위에 추가되면 스크롤 위치 조정)
+                    if (messageListRef.current) {
+                        const newScrollHeight = messageListRef.current.scrollHeight;
+                        messageListRef.current.scrollTop = newScrollHeight - scrollHeight;
+                    }
+                });
             }
         }
     };
@@ -612,119 +603,108 @@ const ChatRoom = () => {
     });
 
     return (
-        <div className="chat-layout">
-            {/* 사이드바는 상위 컴포넌트에서 렌더링한다고 가정 */}
-
-            {/* 채팅 창 */}
-            <div className="chat-window">
-                {/* 채팅 헤더 */}
-                <div className="chat-header">
-                    <div className="room-title">{roomInfo.title}</div>
-                    <div className="actions">
-                        <div className="connection-status">
-                            <div className={`status-indicator ${connected ? 'connected' : 'disconnected'}`}></div>
-                            <span>{connected ? '연결됨' : '연결 중...'}</span>
-                        </div>
+        <div className="chat-window">
+            {/* 채팅 헤더 */}
+            <div className="chat-header">
+                <div className="room-title">{roomInfo.title}</div>
+                <div className="actions">
+                    <div className="connection-status">
+                        <div className={`status-indicator ${connected ? 'connected' : 'disconnected'}`}></div>
+                        <span>{connected ? '연결됨' : '연결 중...'}</span>
+                    </div>
+                    <button
+                        className={`action-btn ${actionInProgress ? 'disabled' : ''}`}
+                        onClick={leaveRoom}
+                        disabled={actionInProgress}
+                    >
+                        <i className="fa-solid fa-right-from-bracket"></i>
+                        {actionInProgress ? '처리 중...' : '나가기'}
+                    </button>
+                    {isRoomCreator && (
                         <button
-                            className={`action-btn ${actionInProgress ? 'disabled' : ''}`}
-                            onClick={leaveRoom}
+                            className={`action-btn delete ${actionInProgress ? 'disabled' : ''}`}
+                            onClick={deleteRoom}
                             disabled={actionInProgress}
                         >
-                            <i className="fa-solid fa-right-from-bracket"></i>
-                            {actionInProgress ? '처리 중...' : '나가기'}
+                            <i className="fa-solid fa-trash"></i>
+                            {actionInProgress ? '처리 중...' : '삭제하기'}
                         </button>
-                        {isRoomCreator && (
-                            <button
-                                className={`action-btn delete ${actionInProgress ? 'disabled' : ''}`}
-                                onClick={deleteRoom}
-                                disabled={actionInProgress}
-                            >
-                                <i className="fa-solid fa-trash"></i>
-                                {actionInProgress ? '처리 중...' : '삭제하기'}
-                            </button>
-                        )}
-                    </div>
+                    )}
                 </div>
+            </div>
 
-                {/* 채팅 메시지 영역 */}
-                {loading && messages.length === 0 ? (
-                    <div className="loading">
-                        <div className="loading-spinner"></div>
-                        <p>로딩 중...</p>
-                    </div>
-                ) : error ? (
-                    <div className="empty-chat">
-                        <p className="text-red-500">{error}</p>
-                    </div>
-                ) : (
-                    <div
-                        className="chat-messages"
-                        ref={messageListRef}
-                        onScroll={handleScroll}
-                    >
-                        {messages.length === 0 ? (
-                            <div className="empty-chat">
-                                <p className="main-message">아직 메시지가 없습니다.</p>
-                                <p className="sub-message">첫 메시지를 보내보세요!</p>
-                            </div>
-                        ) : (
-                            <>
-                                {sortedDates.map(date => (
-                                    <div key={date}>
-                                        <div className="date-divider">
-                                            <span>{date}</span>
-                                        </div>
-                                        {groupedMessages[date].map((msg) => (
-                                            <div
-                                                key={msg.chatMsgId || `${msg.userId}-${Date.now()}-${Math.random()}`}
-                                                className={`message ${msg.userId === userInfo.id ? 'sent' : 'received'} ${msg.failed ? 'failed' : ''}`}
-                                            >
-                                                <div className="avatar">
-                                                    {/* 실제 사용자 아바타가 있으면 추가 */}
-                                                </div>
-                                                <div className="content">
-                                                    <div className="sender">{msg.nickname}</div>
-                                                    <div className="bubble">{msg.message}</div>
-                                                    <div className="time">
-                                                        {msg.sendAt ? formatTime(msg.sendAt) : ''}
-                                                        {msg.failed && <span className="error-badge" title={msg.failReason}>!</span>}
-                                                    </div>
+            {/* 채팅 메시지 영역 */}
+            {loading && messages.length === 0 ? (
+                <div className="loading">
+                    <div className="loading-spinner"></div>
+                    <p>로딩 중...</p>
+                </div>
+            ) : error ? (
+                <div className="empty-chat">
+                    <p className="text-red-500">{error}</p>
+                </div>
+            ) : (
+                <div
+                    className="chat-messages"
+                    ref={messageListRef}
+                    onScroll={handleScroll}
+                >
+                    {messages.length === 0 ? (
+                        <div className="empty-chat">
+                            <p className="main-message">아직 메시지가 없습니다.</p>
+                            <p className="sub-message">첫 메시지를 보내보세요!</p>
+                        </div>
+                    ) : (
+                        <>
+                            {sortedDates.map(date => (
+                                <div key={date}>
+                                    <div className="date-divider">
+                                        <span>{date}</span>
+                                    </div>
+                                    {groupedMessages[date].map((msg) => (
+                                        <div
+                                            key={msg.chatMsgId || `${msg.userId}-${Date.now()}-${Math.random()}`}
+                                            className={`message ${msg.userId === userInfo.id ? 'sent' : 'received'} ${msg.failed ? 'failed' : ''}`}
+                                        >
+                                            <div className="avatar">
+                                                {/* 실제 사용자 아바타가 있으면 추가 */}
+                                            </div>
+                                            <div className="content">
+                                                <div className="sender">{msg.nickname}</div>
+                                                <div className="bubble">{msg.message}</div>
+                                                <div className="time">
+                                                    {msg.sendAt ? formatTime(msg.sendAt) : ''}
+                                                    {msg.failed && <span className="error-badge" title={msg.failReason}>!</span>}
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                ))}
-                                <div ref={messagesEndRef} />
-                            </>
-                        )}
-                    </div>
-                )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </>
+                    )}
+                </div>
+            )}
 
-                {/* 채팅 입력 영역 */}
-                <form onSubmit={sendMessage} className="chat-input">
-                    <button type="button" className="emoji-btn">
-                        <i className="fa-regular fa-face-smile"></i>
-                    </button>
-                    <button type="button" className="attach-btn">
-                        <i className="fa-solid fa-paperclip"></i>
-                    </button>
-                    <input
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="메시지를 입력하세요"
-                        maxLength={300}
-                        disabled={actionInProgress || !connected}
-                    />
-                    <button
-                        type="submit"
-                        className="send-btn"
-                        disabled={!newMessage.trim() || actionInProgress || !connected}
-                    >
-                        <i className="fa-solid fa-paper-plane"></i>
-                    </button>
-                </form>
-            </div>
+            {/* 채팅 입력 영역 */}
+            <form onSubmit={sendMessage} className="chat-input">
+                <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="메시지를 입력하세요"
+                    maxLength={300}
+                    disabled={actionInProgress || !connected}
+                />
+                <button
+                    type="submit"
+                    className="send-btn"
+                    disabled={!newMessage.trim() || actionInProgress || !connected}
+                >
+                    <i className="fa-solid fa-paper-plane">전송</i>
+                </button>
+            </form>
         </div>
     );
 };

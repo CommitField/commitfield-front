@@ -10,6 +10,7 @@ const ChatRoomList = () => {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('all'); // 'all', 'created', 'joined'
     const [refreshTrigger, setRefreshTrigger] = useState(0); // 목록 새로고침을 위한 트리거
+    const [selectedRoomId, setSelectedRoomId] = useState(null); // 선택된 채팅방 ID
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -56,6 +57,9 @@ const ChatRoomList = () => {
     // 채팅방 입장 처리
     const handleJoinRoom = async (roomId) => {
         try {
+            // 채팅방 ID를 상태에 저장
+            setSelectedRoomId(roomId);
+
             // Check if we're in the "all" tab and not already joined
             if (activeTab === 'all') {
                 // Get joined rooms to check if already joined
@@ -69,12 +73,19 @@ const ChatRoomList = () => {
                 }
             }
 
-            // Navigate to the room directly in the current view
-            navigate(`/chat-rooms/${roomId}`);
+            // URL 업데이트 (히스토리에는 추가하지 않음)
+            navigate(`/chat-rooms/${roomId}`, { replace: true });
         } catch (err) {
             console.error('Error joining room:', err);
             alert('채팅방 참여에 실패했습니다.');
         }
+    };
+
+    // 채팅방 나가기 콜백 함수 (ChatRoom 컴포넌트에서 호출)
+    const handleLeaveRoom = () => {
+        console.log('User left the room, clearing selected room');
+        setSelectedRoomId(null);
+        navigate('/chat-rooms', { replace: true });
     };
 
     const handleCreateRoom = () => {
@@ -145,6 +156,17 @@ const ChatRoomList = () => {
         };
     }, [activeTab]);
 
+    // 페이지 로드 시 현재 URL에서 roomId 확인
+    useEffect(() => {
+        const pathParts = location.pathname.split('/');
+        const roomIdFromUrl = pathParts[pathParts.length - 1];
+
+        // URL에 roomId가 있고 숫자인 경우 선택된 채팅방으로 설정
+        if (roomIdFromUrl && !isNaN(roomIdFromUrl)) {
+            setSelectedRoomId(parseInt(roomIdFromUrl));
+        }
+    }, [location]);
+
     // 수동 새로고침 버튼 핸들러
     const handleRefresh = () => {
         setRefreshTrigger(prev => prev + 1);
@@ -152,6 +174,11 @@ const ChatRoomList = () => {
 
     // Check if room list is empty
     const isRoomsEmpty = rooms.length === 0;
+
+    const refreshRoomList = () => {
+        console.log('채팅방 목록 새로고침');
+        setRefreshTrigger(prev => prev + 1); // 이 트리거로 목록 리로드
+    };
 
     return (
         <div className="chat-layout">
@@ -204,7 +231,7 @@ const ChatRoomList = () => {
                         {rooms.map((room) => (
                             <div
                                 key={room.id}
-                                className="chat-room"
+                                className={`chat-room ${selectedRoomId === room.id ? 'active' : ''}`}
                                 onClick={() => handleJoinRoom(room.id)}
                             >
                                 <div className="profile-img">
@@ -225,25 +252,31 @@ const ChatRoomList = () => {
 
                 {/* 채팅방 생성 버튼 */}
                 <div className="create-room-btn" onClick={handleCreateRoom}>
-                    <i className="fa-solid fa-plus"></i>
+                    <i className="fa-solid fa-plus">생성</i>
                 </div>
 
                 {/* 새로고침 버튼 */}
                 <div className="refresh-btn" onClick={handleRefresh} title="새로고침">
-                    <i className="fa-solid fa-arrows-rotate"></i>
+                    <i className="fa-solid fa-arrows-rotate">새로고침</i>
                 </div>
             </div>
 
             {/* 채팅창 영역 - 우측 검은 영역 */}
             <div className="chat-content-area">
-                <Routes>
-                    <Route path="/:roomId" element={<ChatRoom />} />
-                    <Route path="/" element={
-                        <div className="empty-state">
-                            <p>채팅방을 선택해주세요</p>
-                        </div>
-                    } />
-                </Routes>
+                {selectedRoomId ? (
+                    <ChatRoom
+                        key={selectedRoomId}
+                        roomId={selectedRoomId}
+                        onLeaveRoom={handleLeaveRoom}
+                        refreshRooms={handleRefresh} // 이렇게 새로고침 함수 전달
+                    />
+                ) : (
+                    <div className="empty-state">
+                        <p>채팅방을 선택해주세요</p>
+                    </div>
+                )}
+
+
             </div>
         </div>
     );
