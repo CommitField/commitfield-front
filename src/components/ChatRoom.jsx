@@ -707,7 +707,8 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
                     className="send-btn"
                     disabled={!newMessage.trim() || actionInProgress || !connected}
                 >
-                    <i className="fa-solid fa-paper-plane">전송</i>
+                    <i className="fa-solid fa-paper-plane"></i>
+                    전송
                 </button>
             </form>
         </div>
