@@ -364,12 +364,24 @@
 }
 
 /* 채팅 메시지 영역 */
+/* 채팅 메시지 영역에 최대 높이와 스크롤 적용 */
 .chat-messages {
     flex: 1;
     padding: 20px;
-    overflow-y: auto;
+    overflow-y: auto; /* 세로 스크롤 적용 */
+    max-height: calc(100vh - 180px); /* 채팅 입력창과 헤더를 제외한 높이로 설정 */
     display: flex;
     flex-direction: column;
+}
+
+/* 채팅창 전체가 flex로 구성되도록 */
+.chat-window {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--light-green);
+    height: 100%; /* 전체 높이 사용 */
+    overflow: hidden; /* 넘치는 부분 숨김 */
 }
 
 /* 날짜 구분선 */
