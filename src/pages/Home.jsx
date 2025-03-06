@@ -37,9 +37,6 @@ const Home = () => {
     fetchUserInfo();
   }, []);
 
-  if (userLoading) return <p>로딩 중...</p>;
-  if (userError) return <p>{error}</p>;
-
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
     if (isModalOpen) {

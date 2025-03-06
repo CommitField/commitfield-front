@@ -11,9 +11,6 @@ class WebSocketService {
     this.messageCallbacks = new Set();
     this.connectionCallbacks = new Set();
     this.subscribedRooms = new Set();
-    this.subscriptions = {};
-    this.notificationCallbacks = new Set(); // 알림 콜백 추가
-
     this.pendingMessages = [];
     this.connectionPromise = null;
   }
@@ -34,41 +31,25 @@ class WebSocketService {
         return;
       }
 
+      // 기존 연결이 있으면 먼저 종료
+      if (this.webSocket) {
+        try {
+          this.webSocket.close();
+        } catch (err) {
+          console.error('Error closing previous connection:', err);
+        }
+      }
+
       try {
         // 연결 시작 알림
         this.notifyConnectionStatus(false);
 
         // WebSocket 연결 생성
-        const baseUrl = API_BACKEND_URL;
+        const baseUrl = API_BACKEND_URL || 'http://localhost:8090';
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsBaseUrl = baseUrl.replace(/^https?:/, wsProtocol);
 
-          // SockJS와 STOMP 클라이언트 생성
-        const socket = new SockJS(wsBaseUrl);
-
-        // (지웠던 코드 시작)
-        this.stompClient = new Client({
-          webSocketFactory: () => socket,
-          debug: function (str) {
-            console.log("WebSocketService.js:27", str);
-          },
-          reconnectDelay: 5000, // 자동 재연결 시간 (ms)
-          heartbeatIncoming: 4000,
-          heartbeatOutgoing: 4000
-        });
-        // (지웠던 코드 끝)
-
-        // 알림 구독
-        this.subscribeToNotificationChannel();
-
-        // 연결 성공 시 기존에 구독했던 모든 방에 다시 구독 (지웠던 코드 시작)
-        setTimeout(() => {
-          this.subscribedRooms.forEach(roomId => {
-            this.subscribeToRoom(roomId);
-          });
-        }, 500); // 약간의 지연을 두어 STOMP 연결이 완전히 설정될 시간을 줌
         console.log(`Connecting to WebSocket at ${wsBaseUrl}/chat-rooms`);
-        // (지웠던 코드 끝)
 
         // WebSocket 객체 생성
         this.webSocket = new WebSocket(`${wsBaseUrl}/chat-rooms`);
@@ -331,44 +312,6 @@ class WebSocketService {
     }
   }
 
-  // 알림 채널 구독
-  subscribeToNotificationChannel() {
-    if (!this.stompClient || !this.isConnected) {
-      console.warn('WebSocket is not connected. Unable to subscribe to notifications.');
-      return false;
-    }
-
-    try {
-      console.log('Subscribing to notification channel...');
-
-      const notificationSubscription = this.stompClient.subscribe(`/topic/notification`, (message) => {
-        try {
-          console.log('Received notification:', message);
-          const notification = JSON.parse(message.body);
-
-          // 알림 수신 시 모든 콜백 실행
-          this.notificationCallbacks.forEach(callback => {
-            callback(notification);
-          });
-        } catch (error) {
-          console.error('Error parsing notification message:', error);
-        }
-      });
-
-      console.log('Subscribed to notification channel');
-      return true;
-    } catch (error) {
-      console.error('Error subscribing to notification channel:', error);
-      return false;
-    }
-  }
-
-  // 알림 이벤트 리스너 등록
-  onNotification(callback) {
-    this.notificationCallbacks.add(callback);
-    return () => this.notificationCallbacks.delete(callback);
-  }
-
   // 메시지 수신 이벤트 리스너 등록
   onMessage(callback) {
     this.messageCallbacks.add(callback);
@@ -428,9 +371,6 @@ class WebSocketService {
   disconnect() {
     if (this.webSocket) {
       try {
-        // 알림 구독 해지
-        this.unsubscribeFromNotificationChannel();
-
         // 모든 구독 해지
         this.subscribedRooms.forEach(roomId => {
           this.unsubscribeFromRoom(roomId);
@@ -451,14 +391,6 @@ class WebSocketService {
       }
     }
   }
-
-  // 알림 채널 구독 해지
-  unsubscribeFromNotificationChannel() {
-    // 알림 채널 구독 해지
-    if (this.stompClient) {
-      this.stompClient.unsubscribe('/sub/notification');
-      console.log('Unsubscribed from notification channel');
-    }
 
   // Checks connection status and attempts to reconnect if needed
   async ensureConnection() {
