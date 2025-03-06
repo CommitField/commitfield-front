@@ -7,7 +7,7 @@ import { FaBell } from 'react-icons/fa';
 import './CommitStats.css';
 import '../modals/NotificationModal.css';
 import NotiService from '../services/NotiService';
-import webSocketService from '../services/WebSocketService';
+import webSocketNotificationService from '../services/WebSocketNotificationService';
 
 const Home = () => {
   // 알림 모달
@@ -27,12 +27,29 @@ const Home = () => {
   const [connected, setConnected] = useState(false);  // 웹소켓 연결 상태
   const navigate = useNavigate();
 
-  const toggleModal = () => {
+  const toggleModal = async () => {
     setIsModalOpen(!isModalOpen);
-    if (isModalOpen) {
-      setHasNewNotification(false); // 모달을 열면 새로운 알림 표시 제거
+    if (!isModalOpen) {  // 모달이 열릴 때 (false -> true)
+        try {
+            // 읽지 않은 알림만 필터링
+            const unreadNotifications = notifications.filter(noti => !noti.read);
+            if (unreadNotifications.length > 0) {
+                const unreadIds = unreadNotifications.map(noti => noti.id);
+                await NotiService.markAsRead(unreadIds);
+                
+                // 상태 업데이트: 알림을 읽음으로 표시
+                setNotifications(prev => prev.map(noti => 
+                    unreadIds.includes(noti.id) 
+                        ? { ...noti, read: true }
+                        : noti
+                ));
+            }
+            setHasNewNotification(false);
+        } catch (error) {
+            console.error('Failed to mark notifications as read:', error);
+        }
     }
-  };
+};
 
   // 메시지 목록을 로드하는 함수
   const loadNotis = async () => {
@@ -53,24 +70,39 @@ useEffect(() => {
   loadNotis();
 
   // 웹소켓 연결
-  webSocketService.connect();
+  webSocketNotificationService.connect();
 
   // 연결 상태 변경 이벤트 리스너 등록
-  const unsubscribeFromConnection = webSocketService.onConnectionChange(setConnected);
+  const unsubscribeFromConnection = webSocketNotificationService.onConnectionChange(setConnected);
+
+  // 새로운 알림 메시지 핸들러 등록
+  const unsubscribeFromMessages = webSocketNotificationService.onMessage((newNotification) => {
+    console.log('New notification received:', newNotification);
+    // 새로운 알림을 기존 알림 목록 앞에 추가
+    setNotifications(prev => [newNotification, ...prev]);
+    // 모달이 닫혀있을 때만 새 알림 표시
+    if (!isModalOpen) {
+      setHasNewNotification(true);
+    }
+  });
 
   // 채팅방 구독 시도
   setTimeout(() => {
-      const success = webSocketService.subscribeToNotificationChannel();
+      const success = webSocketNotificationService.subscribeToNotificationChannel();
       console.log('Notis subscription success:', success);
   }, 1000); // 약간의 지연을 두어 연결이 설정될 시간을 줌
 
   // 컴포넌트 언마운트 시 이벤트 리스너 제거 및 구독 해제
-  return () => {
+    return () => {
       if (unsubscribeFromConnection) {
-          unsubscribeFromConnection();
+        unsubscribeFromConnection();
       }
-  };
-}, []);
+      if (unsubscribeFromMessages) {
+        unsubscribeFromMessages();
+      }
+      webSocketNotificationService.disconnect();
+    };
+}, [isModalOpen]); // isModalOpen 의존성 추가
   
   useEffect(() => {
     const fetchCommitData = async () => {
@@ -195,16 +227,43 @@ useEffect(() => {
     }
   };
 
+  const notificationBtnStyle = {
+    position: 'relative',
+    backgroundColor: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    alignItems: 'center',
+  };
+
+  const notificationIconStyle = {
+    fontSize: '20px',
+  };
+
+  const notificationBadgeStyle = {
+    position: 'absolute',
+    top: '4px',
+    right: '12px',
+    width: '8px',
+    height: '8px',
+    backgroundColor: '#ef4444',
+    borderRadius: '50%',
+    display: hasNewNotification ? 'block' : 'none',
+  };
+
   return (
     <div className="page-container">
       <div className="header">
         <div className="header-content">
           <span style={{ fontSize: '24px', fontWeight: 'bold' }}>CommitField</span>
           <div className="flex items-center gap-4">
-          <button onClick={toggleModal} className="notification-btn">
-              <FaBell className="notification-icon" />
-              {hasNewNotification && <span className="notification-badge"></span>}
-            </button>
+          <button 
+            onClick={toggleModal} 
+            style={notificationBtnStyle}
+            title={connected ? "알림 연결됨" : "알림 연결 중..."}
+          >
+            <FaBell style={notificationIconStyle} />
+            <span style={notificationBadgeStyle}></span>
+          </button>
             {/* 채팅 버튼 추가 */}
             <button
               onClick={goToChat}
@@ -215,7 +274,8 @@ useEffect(() => {
                 border: 'none',
                 alignItems: 'center',
                 gap: '6px',
-                marginRight: '8px'
+                marginRight: '8px',
+                marginLeft: '8px'
               }}
             >
               {/* <MessageSquare size={18} /> */}
