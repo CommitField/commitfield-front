@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ChatService from '../services/ChatService';
 import './ChatStyles.css';
@@ -6,9 +6,25 @@ import './ChatStyles.css';
 const CreateChatRoom = () => {
     const [title, setTitle] = useState('');
     const [userCountMax, setUserCountMax] = useState(10);
+    const [password, setPassword] = useState('');
+    const [isPrivate, setIsPrivate] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
+
+    // ESC 키 누를 때 닫기
+    useEffect(() => {
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') {
+                navigate('/chat-rooms');
+            }
+        };
+
+        window.addEventListener('keydown', handleEsc);
+        return () => {
+            window.removeEventListener('keydown', handleEsc);
+        };
+    }, [navigate]);
 
     const validateForm = () => {
         const newErrors = {};
@@ -29,11 +45,21 @@ const CreateChatRoom = () => {
             newErrors.userCountMax = '최대 인원 수는 100명까지 가능합니다.';
         }
 
+        // 비공개방이면 비밀번호 검증
+        if (isPrivate) {
+            if (!password) {
+                newErrors.password = '비밀번호를 입력해주세요.';
+            } else if (password.length < 4) {
+                newErrors.password = '비밀번호는 최소 4자 이상이어야 합니다.';
+            } else if (password.length > 20) {
+                newErrors.password = '비밀번호는 최대 20자까지 가능합니다.';
+            }
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
-    // 개선된 handleSubmit 함수 - 강제 새로고침 제거
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -43,18 +69,24 @@ const CreateChatRoom = () => {
 
         setLoading(true);
         try {
-            console.log('Creating room with:', { title, userCountMax });
-            const response = await ChatService.createRoom(title, userCountMax);
+            // 비공개방이 아니면 비밀번호 없이 전송
+            const roomData = {
+                title,
+                userCountMax,
+                ...(isPrivate && { password })
+            };
+
+            console.log('Creating room with:', roomData);
+            const response = await ChatService.createRoom(roomData.title, roomData.userCountMax, roomData.password);
             console.log('Create room response:', response);
 
             if (response && !response.errorCode) {
                 // 성공 메시지 표시
                 alert('채팅방이 성공적으로 생성되었습니다.');
-                
-                // 강제 새로고침 대신 상태 관리 통해 업데이트되도록 함
-                // localStorage를 사용하여 상태 갱신 트리거
-                localStorage.setItem('chatRoomCreated', Date.now().toString());
-                
+
+                // 로컬 스토리지를 사용하여 상태 갱신 트리거
+                localStorage.setItem('chatRoomChanged', Date.now().toString());
+
                 // 채팅방 목록으로 이동
                 navigate('/chat-rooms', { replace: true });
             } else {
@@ -69,45 +101,39 @@ const CreateChatRoom = () => {
     };
 
     return (
-        <div className="chat-layout">
-            {/* 사이드바는 상위 컴포넌트에서 렌더링한다고 가정 */}
-            
-            <div className="chat-window">
-                <div className="chat-header">
-                    <div className="room-title">새 채팅방 만들기</div>
-                    <button 
-                        className="action-btn"
+        <div className="create-room-container">
+            <div className="create-room-modal">
+                <div className="create-room-header">
+                    <h2>새 채팅방 만들기</h2>
+                    <button
+                        className="close-btn"
                         onClick={() => navigate('/chat-rooms')}
+                        aria-label="닫기"
                     >
-                        <i className="fa-solid fa-xmark"></i>
+                        ×
                     </button>
                 </div>
-                
+
                 <div className="create-room-form">
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
-                            <label htmlFor="title">채팅방 이름</label>
+                            <label className="form-label" htmlFor="title">채팅방 이름</label>
                             <input
                                 id="title"
                                 type="text"
-                                className={errors.title ? 'error' : ''}
+                                className="form-control"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="채팅방 이름을 입력하세요"
-                                minLength={2}
-                                maxLength={20}
                             />
-                            {errors.title && (
-                                <p className="error-message">{errors.title}</p>
-                            )}
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="userCountMax">최대 인원 수</label>
+                            <label className="form-label" htmlFor="userCountMax">최대 인원 수</label>
                             <input
                                 id="userCountMax"
                                 type="number"
-                                className={errors.userCountMax ? 'error' : ''}
+                                className={`form-control ${errors.userCountMax ? 'error' : ''}`}
                                 value={userCountMax}
                                 onChange={(e) => setUserCountMax(parseInt(e.target.value) || '')}
                                 min={2}
@@ -118,10 +144,39 @@ const CreateChatRoom = () => {
                             )}
                         </div>
 
+                        <div className="checkbox-wrapper">
+                            <input
+                                id="isPrivate"
+                                type="checkbox"
+                                checked={isPrivate}
+                                onChange={(e) => setIsPrivate(e.target.checked)}
+                            />
+                            <label htmlFor="isPrivate" className="checkbox-label">비공개 채팅방</label>
+                        </div>
+
+                        {isPrivate && (
+                            <div className="form-group">
+                                <label className="form-label" htmlFor="password">비밀번호</label>
+                                <input
+                                    id="password"
+                                    type="password"
+                                    className={`form-control ${errors.password ? 'error' : ''}`}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="채팅방 비밀번호를 입력하세요"
+                                    minLength={4}
+                                    maxLength={20}
+                                />
+                                {errors.password && (
+                                    <p className="error-message">{errors.password}</p>
+                                )}
+                            </div>
+                        )}
+
                         <div className="form-actions">
                             <button
                                 type="button"
-                                className="btn btn-secondary"
+                                className="btn btn-cancel"
                                 onClick={() => navigate('/chat-rooms')}
                                 disabled={loading}
                             >
@@ -132,7 +187,7 @@ const CreateChatRoom = () => {
                                 className="btn btn-primary"
                                 disabled={loading}
                             >
-                                {loading ? '생성 중...' : '생성하기'}
+                                {loading ? '생성 중...' : '채팅방 생성'}
                             </button>
                         </div>
                     </form>

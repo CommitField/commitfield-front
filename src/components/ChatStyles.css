@@ -239,39 +239,56 @@
     margin-bottom: 20px;
 }
 
-.form-group label {
+.form-group label,
+.form-label {
     display: block;
     margin-bottom: 8px;
-    font-weight: bold;
-    color: var(--text-primary);
+    font-weight: 500;
+    color: #333;
+    /* 어두운 배경에 어두운 글자색은 보이지 않으므로 수정 */
+    font-size: 14px;
 }
 
 /* 폼 입력 필드 스타일 수정 */
 .form-group input,
-.form-group select {
+.form-group select,
+.form-control {
     width: 100%;
-    padding: 10px;
-    border: 1px solid var(--medium-gray);
-    border-radius: 4px;
-    color: white;
-    /* 글자색을 흰색으로 변경 */
-    background-color: #333;
-    /* 배경색을 어둡게 변경 */
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: white;
+    /* 배경색을 흰색으로 변경 */
+    color: #333;
+    /* 텍스트 색상을 어두운 색으로 변경 */
+    font-size: 15px;
+    transition: all 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 2px rgba(63, 178, 127, 0.2);
 }
 
 /* 필요한 경우 placeholder 색상도 조정 */
 .form-group input::placeholder,
-.form-group select::placeholder {
+.form-group select::placeholder,
+.form-control::placeholder {
     color: #aaa;
 }
 
-.form-group input.error {
+.form-group input.error,
+.form-control.error {
     border-color: #e74c3c;
 }
 
-.form-group .error-message {
+.form-group .error-message,
+.error-message {
     color: #e74c3c;
-    font-size: 14px;
+    font-size: 13px;
     margin-top: 5px;
 }
 
@@ -283,17 +300,40 @@
 }
 
 .btn {
-    padding: 10px 15px;
+    padding: 10px 18px;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
-    font-weight: bold;
+    font-weight: 500;
+    font-size: 15px;
+    transition: all 0.2s;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-cancel,
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-cancel:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled) {
+    background-color: #5a6268;
 }
 
 .btn-primary {
     background-color: var(--primary-green);
     color: white;
 }
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #45c28d;
+}
+
 
 .btn-secondary {
     background-color: var(--light-gray);
@@ -316,22 +356,130 @@
     padding: 15px 20px;
     background-color: var(--white);
     border-bottom: 1px solid var(--medium-gray);
+    position: relative;
+    /* 상대 위치 설정 */
+    z-index: 5;
+    /* 적절한 z-index 설정 */
 }
 
-.chat-header .room-title {
+/* 채팅방 정보 영역 */
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: var(--white);
+    border-bottom: 1px solid var(--medium-gray);
+    position: relative;
+    z-index: 5;
+}
+
+.room-info-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    /* 제목과 버튼 사이 간격 */
+    flex: 1;
+}
+
+/* 채팅방 제목 */
+.room-title {
     font-size: 18px;
     font-weight: bold;
     color: var(--text-primary);
 }
+
+
+/* 헤더 내 버튼 스타일 */
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.header-actions .action-btn {
+    background: none;
+    border: none;
+    color: var(--dark-gray);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 5px 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.header-actions .action-btn i {
+    margin-right: 4px;
+    font-size: 14px;
+}
+
+.header-actions .action-btn:hover {
+    background-color: var(--light-gray);
+}
+
+.header-actions .action-btn.delete {
+    color: #e74c3c;
+}
+
+.header-actions .action-btn.delete:hover {
+    background-color: #fde9e7;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 576px) {
+    .room-info-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .header-actions {
+        margin-left: 0;
+    }
+
+    .connection-status {
+        margin-top: 5px;
+    }
+}
+
+/* 연결 상태 */
+.connection-status {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: var(--dark-gray);
+    font-weight: 500;
+}
+
+/* 버튼 비활성화 상태 */
+.action-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 
 .chat-header .room-info {
     font-size: 14px;
     color: var(--dark-gray);
 }
 
+/* 오른쪽 버튼 영역 */
 .chat-header .actions {
     display: flex;
-    gap: 15px;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 채팅 상단 버튼 그룹 (새로고침, 생성) */
+.chat-action-buttons {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 10;
 }
 
 .chat-header .action-btn {
@@ -821,5 +969,354 @@
         top: 70px;
         /* Adjust based on your mobile header height */
         right: 10px;
+    }
+}
+
+/* 채팅방 생성 모달 개선 스타일 */
+.create-room-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: rgba(0, 0, 0, 0.75);
+    /* 더 진한 오버레이 */
+    padding: 20px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+}
+
+.create-room-modal {
+    width: 100%;
+    max-width: 450px;
+    background-color: white;
+    /* 흰색 배경으로 변경 */
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.create-room-header {
+    background-color: #333;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+}
+
+.create-room-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.create-room-header .close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.create-room-form {
+    padding: 25px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #333;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: white;
+    color: #333;
+    font-size: 15px;
+    transition: all 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 2px rgba(63, 178, 127, 0.2);
+}
+
+.form-control::placeholder {
+    color: #aaa;
+}
+
+.form-control.error {
+    border-color: #e74c3c;
+}
+
+.error-message {
+    color: #e74c3c;
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+/* 체크박스 스타일 개선 */
+.checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.checkbox-wrapper input[type="checkbox"] {
+    margin-right: 10px;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-green);
+}
+
+.checkbox-label {
+    color: #333;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* 비밀번호 입력 모달 스타일 */
+.password-modal-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: rgba(0, 0, 0, 0.75);
+    padding: 20px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+}
+
+.password-modal {
+    width: 100%;
+    max-width: 400px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.password-modal-header {
+    background-color: #333;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #444;
+}
+
+.password-modal-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    color: white;
+}
+
+.password-modal-content {
+    padding: 25px;
+}
+
+.room-info {
+    margin-bottom: 20px;
+    color: #555;
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+/* 삭제, 나가기 버튼 스타일 */
+.chat-room-actions {
+    display: flex;
+    position: absolute;
+    bottom: -50px;
+    /* 채팅 헤더 아래로 위치 */
+    right: 20px;
+    gap: 10px;
+    z-index: 5;
+}
+
+.chat-room-actions .action-btn {
+    background-color: var(--primary-green);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 15px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.chat-room-actions .action-btn i {
+    margin-right: 5px;
+}
+
+.chat-room-actions .action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.chat-room-actions .action-btn.delete {
+    background-color: #e74c3c;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .chat-room-actions {
+        bottom: -45px;
+        right: 10px;
+    }
+
+    .chat-room-actions .action-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+}
+
+/* 비공개 채팅방 스타일 */
+.chat-room .private-badge {
+    display: inline-block;
+    background-color: #f8d7da;
+    color: #721c24;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 8px;
+    font-weight: normal;
+}
+
+.chat-room .profile-img i.fa-lock {
+    font-size: 20px;
+    color: #e74c3c;
+}
+
+/* 비공개 채팅방 입장 시 비밀번호 확인 모달에 대한 스타일 */
+.password-modal-container {
+    z-index: 2000;
+    /* 기본 모달보다 앞에 표시 */
+}
+
+.password-modal .room-info {
+    background-color: #f8f9fa;
+    padding: 12px;
+    border-radius: 5px;
+    border-left: 4px solid #17a2b8;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.password-modal .error-message {
+    color: #e74c3c;
+    margin-top: 5px;
+    font-size: 13px;
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-5px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(5px);
+    }
+}
+
+/* 로딩 스피너 스타일 */
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 비밀번호 오류 애니메이션 */
+.password-modal .error-message {
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-5px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(5px);
     }
 }
