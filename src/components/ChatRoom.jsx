@@ -234,6 +234,11 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
         // 이미 액션이 진행 중이면 중복 실행 방지
         if (actionInProgress) return;
 
+        // Confirm before deleting
+        if (!window.confirm('채팅방을 정말 나가시겠습니까?')) {
+            return;
+        }
+
         setActionInProgress(true); // 액션 시작
 
         // 먼저 UI 업데이트
@@ -606,30 +611,36 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
         <div className="chat-window">
             {/* 채팅 헤더 */}
             <div className="chat-header">
-                <div className="room-title">{roomInfo.title}</div>
-                <div className="actions">
-                    <div className="connection-status">
-                        <div className={`status-indicator ${connected ? 'connected' : 'disconnected'}`}></div>
-                        <span>{connected ? '연결됨' : '연결 중...'}</span>
-                    </div>
-                    <button
-                        className={`action-btn ${actionInProgress ? 'disabled' : ''}`}
-                        onClick={leaveRoom}
-                        disabled={actionInProgress}
-                    >
-                        <i className="fa-solid fa-right-from-bracket"></i>
-                        {actionInProgress ? '처리 중...' : '나가기'}
-                    </button>
-                    {isRoomCreator && (
+                <div className="room-info-container">
+                    <div className="room-title">{roomInfo.title}</div>
+
+                    {/* 제목 옆에 삭제/나가기 버튼 배치 */}
+                    <div className="header-actions">
                         <button
-                            className={`action-btn delete ${actionInProgress ? 'disabled' : ''}`}
-                            onClick={deleteRoom}
+                            className={`action-btn ${actionInProgress ? 'disabled' : ''}`}
+                            onClick={leaveRoom}
                             disabled={actionInProgress}
                         >
-                            <i className="fa-solid fa-trash"></i>
-                            {actionInProgress ? '처리 중...' : '삭제하기'}
+                            <i className="fa-solid fa-right-from-bracket"></i>
+                            {actionInProgress ? '처리중' : '나가기'}
                         </button>
-                    )}
+
+                        {isRoomCreator && (
+                            <button
+                                className={`action-btn delete ${actionInProgress ? 'disabled' : ''}`}
+                                onClick={deleteRoom}
+                                disabled={actionInProgress}
+                            >
+                                <i className="fa-solid fa-trash"></i>
+                                {actionInProgress ? '처리중' : '삭제하기'}
+                            </button>
+                        )}
+
+                        <div className="connection-status">
+                            <div className={`status-indicator ${connected ? 'connected' : 'disconnected'}`}></div>
+                            <span>{connected ? '연결됨' : '연결 중...'}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -702,7 +713,8 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
                     className="send-btn"
                     disabled={!newMessage.trim() || actionInProgress || !connected}
                 >
-                    <i className="fa-solid fa-paper-plane">전송</i>
+                    <i className="fa-solid fa-paper-plane"></i>
+                    전송
                 </button>
             </form>
         </div>
