@@ -4,7 +4,9 @@ import { API_BACKEND_URL, API_FRONT_URL } from "../config";
 import { Leaf, Sun, Wind, Snowflake, MessageSquare } from 'lucide-react';
 import NotificationModal from '../modals/NotificationModal';
 import { FaBell } from 'react-icons/fa';
+import { Bar } from "recharts";
 import './CommitStats.css';
+import './profile.css';
 import '../modals/NotificationModal.css';
 import axios from "axios";
 import NotiService from '../services/NotiService';
@@ -16,7 +18,7 @@ const Home = () => {
   const [notifications, setNotifications] = useState([]);
   const [hasNewNotification, setHasNewNotification] = useState(false);
 
-  const [userInfo, setUserInfo] = useState(null);
+  const [userInfo, setUserInfo] = useState({});
   const [userLoading, setUserLoading] = useState(true);
   const [userError, setUserError] = useState(null);
 
@@ -283,37 +285,40 @@ useEffect(() => {
       <div className="content-container">
 
       {/* 사용자 프로필 */}
-      <div style={{ display: "flex", alignItems: "center", gap: "20px", padding: "20px", border: "1px solid #ddd", borderRadius: "10px" }}>
-        {/* 왼쪽: 펫 이미지 */}
-        <div>
-          <img src={`/images/pets/${userInfo.petType}.png`} alt="Pet" width={128} height={128} />
-        </div>
-
-        {/* 오른쪽: 사용자 정보 및 펫 정보 */}
-        <div style={{ flex: 1 }}>
-          <h2>{userInfo.username}의 프로필</h2>
-          <img src={userInfo.avatarUrl} alt="User Avatar" width={100} style={{ borderRadius: "50%" }} />
-          <p>이메일: {userInfo.email}</p>
-          <p>티어: {userInfo.tier}</p>
-          <p>총 커밋 수: {userInfo.commitCount}</p>
-          <p>가입일: {new Date(userInfo.createdAt).toLocaleDateString()}</p>
-          <p>마지막 커밋 날짜: {new Date(userInfo.lastCommitted).toLocaleDateString()}</p>
-
-          {/* 펫 정보 */}
-          <h3>🐾 펫 정보</h3>
-          <p>펫 타입: {userInfo.petType}</p>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "200px", height: "30px" }}>
-              <Bar data={expData} options={expOptions} />
+      <div className="flex-box">
+          <div className="profile-container">
+            {/* 왼쪽: 펫 이미지 */}
+            <div className="pet-box">
+              <img
+                src={`/pets/${userInfo.petGrow}_${userInfo.petType}_128.png`}
+                alt="Pet"
+                className="animated-pet"
+              />
             </div>
-            <p>
-              {userInfo.petExp} / 100
-            </p>
-          </div>
-          <p>성장 단계: {userInfo.petGrow}</p>
-        </div>
-      </div>
 
+            {/* 오른쪽: 사용자 정보 및 펫 정보 */}
+            <div className="info-box">
+              <h2>{userInfo.username}의 프로필</h2>
+              <img src={userInfo.avatarUrl} alt="User Avatar" className="avatar" />
+              <p>이메일: {userInfo.email}</p>
+              <p>이번 시즌 커밋 수: {userInfo.seasonCommitCount}</p>
+              <p>티어: {userInfo.tier}</p>
+              <p>가입일: {new Date(userInfo.createdAt).toLocaleDateString()}</p>
+              <p>마지막 커밋 날짜: {new Date(userInfo.lastCommitted).toLocaleDateString()}</p>
+
+              {/* 펫 정보 */}
+              <h3>🐾 펫 정보</h3>
+              <p>펫 타입: {userInfo.petType}</p>
+              <div className="exp-bar">
+                <div className="bar">
+                  <Bar data={userInfo.seasonCommitCount} options={94} />
+                </div>
+                <p>{userInfo.petExp} / 100</p>
+              </div>
+              <p>성장 단계: {userInfo.petGrow}</p>
+            </div>
+          </div>
+        </div>
 
 
 
