@@ -7,6 +7,11 @@
   }
 }
 
+h2 {
+    color: #222222;
+}
+
+
 .animated-pet {
   animation: breathe 1.5s infinite ease-in-out;
 }
@@ -15,7 +20,6 @@
     width:100%;
     display: flex;
     justify-content: center;
-    flex-direction: column;
 }
 
 .profile-container {
@@ -32,6 +36,11 @@
   line-height: 1.4;
 }
 
+.pet-box {
+  width: 130px;
+  height: 130px;
+  border: 1px solid #ff8a9e;;
+}
 .pet-box img {
   width: 128px;
   height: 128px;
@@ -41,6 +50,10 @@
   flex: 1;
 }
 
+.info-box img {
+  width: 32px;
+  height: 32px;
+}
 .avatar {
   width: 100px;
   border-radius: 50%;
@@ -53,6 +66,8 @@
 }
 
 .bar {
-  width: 200px;
-  height: 30px;
+    width: 200px;
+    display: flex;
+    align-items: center;
+    height: 30px;
 }
