@@ -10,6 +10,7 @@ const ChatRoomList = () => {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('all'); // 'all', 'created', 'joined'
     const [refreshTrigger, setRefreshTrigger] = useState(0); // 목록 새로고침을 위한 트리거
+    const [selectedRoomId, setSelectedRoomId] = useState(null); // 선택된 채팅방 ID
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -21,14 +22,16 @@ const ChatRoomList = () => {
             const forceRefresh = true; // 매번 최신 데이터 가져오기
             switch (activeTab) {
                 case 'created':
-                    response = await ChatService.getMyCreatedRooms(forceRefresh);
+                    response = await ChatService.getMyCreatedRooms(0, 100, forceRefresh);
                     break;
                 case 'joined':
-                    response = await ChatService.getMyJoinedRooms(forceRefresh);
+                    response = await ChatService.getMyJoinedRooms(0, 100, forceRefresh);
                     break;
                 default:
-                    response = await ChatService.getRoomList(forceRefresh);
+                    response = await ChatService.getRoomList(0, 100, forceRefresh);
             }
+
+            console.log(`${activeTab} 채팅방 목록 응답:`, response);
 
             // Handle API response
             if (response.data && Array.isArray(response.data)) {
@@ -54,25 +57,35 @@ const ChatRoomList = () => {
     // 채팅방 입장 처리
     const handleJoinRoom = async (roomId) => {
         try {
+            // 채팅방 ID를 상태에 저장
+            setSelectedRoomId(roomId);
+
             // Check if we're in the "all" tab and not already joined
             if (activeTab === 'all') {
                 // Get joined rooms to check if already joined
                 const joinedResponse = await ChatService.getMyJoinedRooms();
                 const joinedRooms = joinedResponse.data || [];
                 const isAlreadyJoined = joinedRooms.some(room => room.id === roomId);
-                
+
                 if (!isAlreadyJoined) {
                     // Call join API if not already joined
                     await ChatService.joinRoom(roomId);
                 }
             }
-            
-            // Navigate to the room directly in the current view
-            navigate(`/chat-rooms/${roomId}`);
+
+            // URL 업데이트 (히스토리에는 추가하지 않음)
+            navigate(`/chat-rooms/${roomId}`, { replace: true });
         } catch (err) {
             console.error('Error joining room:', err);
             alert('채팅방 참여에 실패했습니다.');
         }
+    };
+
+    // 채팅방 나가기 콜백 함수 (ChatRoom 컴포넌트에서 호출)
+    const handleLeaveRoom = () => {
+        console.log('User left the room, clearing selected room');
+        setSelectedRoomId(null);
+        navigate('/chat-rooms', { replace: true });
     };
 
     const handleCreateRoom = () => {
@@ -87,21 +100,25 @@ const ChatRoomList = () => {
     // 로컬 스토리지로부터 채팅방 생성/변경/삭제 이벤트 감지
     useEffect(() => {
         const checkForChanges = () => {
-            // 채팅방 생성 이벤트 확인
-            const createdChange = localStorage.getItem('chatRoomCreated');
-            if (createdChange) {
-                // 변경사항이 있으면 목록 새로고침
-                setRefreshTrigger(prev => prev + 1);
-                // 처리 후 로컬스토리지 항목 제거
-                localStorage.removeItem('chatRoomCreated');
-            }
-            
-            // 채팅방 나가기/삭제 이벤트 확인
+            // 참여 방 새로고침 플래그 확인
+            const refreshJoinedOnly = localStorage.getItem('refreshJoinedOnly');
+
+            // 방 변경 이벤트
             const roomChanged = localStorage.getItem('chatRoomChanged');
             if (roomChanged) {
-                // 변경사항이 있으면 목록 새로고침
-                setRefreshTrigger(prev => prev + 1);
-                // 처리 후 로컬스토리지 항목 제거
+                if (refreshJoinedOnly === 'true') {
+                    // 현재 '참여 중인 채팅방' 탭이거나 참여 방만 업데이트하는 경우
+                    if (activeTab === 'joined') {
+                        console.log('참여 중인 채팅방 목록만 새로고침');
+                        setRefreshTrigger(prev => prev + 1);
+                    }
+                    localStorage.removeItem('refreshJoinedOnly');
+                } else {
+                    // 일반적인 모든 탭 새로고침
+                    console.log('모든 탭 새로고침');
+                    setRefreshTrigger(prev => prev + 1);
+                }
+
                 localStorage.removeItem('chatRoomChanged');
             }
         };
@@ -118,7 +135,7 @@ const ChatRoomList = () => {
         return () => {
             window.removeEventListener('storage', handleStorageChange);
         };
-    }, []);
+    }, [activeTab]);
 
     // 목록 로드 효과
     useEffect(() => {
@@ -139,6 +156,17 @@ const ChatRoomList = () => {
         };
     }, [activeTab]);
 
+    // 페이지 로드 시 현재 URL에서 roomId 확인
+    useEffect(() => {
+        const pathParts = location.pathname.split('/');
+        const roomIdFromUrl = pathParts[pathParts.length - 1];
+
+        // URL에 roomId가 있고 숫자인 경우 선택된 채팅방으로 설정
+        if (roomIdFromUrl && !isNaN(roomIdFromUrl)) {
+            setSelectedRoomId(parseInt(roomIdFromUrl));
+        }
+    }, [location]);
+
     // 수동 새로고침 버튼 핸들러
     const handleRefresh = () => {
         setRefreshTrigger(prev => prev + 1);
@@ -147,32 +175,37 @@ const ChatRoomList = () => {
     // Check if room list is empty
     const isRoomsEmpty = rooms.length === 0;
 
+    const refreshRoomList = () => {
+        console.log('채팅방 목록 새로고침');
+        setRefreshTrigger(prev => prev + 1); // 이 트리거로 목록 리로드
+    };
+
     return (
         <div className="chat-layout">
             {/* 채팅방 목록 컨테이너 */}
             <div className="chat-list-container">
                 {/* 채팅방 목록 헤더 */}
                 <div className="chat-tabs">
-                    <div 
+                    <div
                         className={`chat-tab ${activeTab === 'all' ? 'active' : ''}`}
                         onClick={() => handleTabChange('all')}
                     >
                         전체 채팅방
                     </div>
-                    <div 
+                    <div
                         className={`chat-tab ${activeTab === 'created' ? 'active' : ''}`}
                         onClick={() => handleTabChange('created')}
                     >
                         내가 만든 채팅방
                     </div>
-                    <div 
+                    <div
                         className={`chat-tab ${activeTab === 'joined' ? 'active' : ''}`}
                         onClick={() => handleTabChange('joined')}
                     >
                         참여 중인 채팅방
                     </div>
                 </div>
-                
+
                 {/* 채팅방 목록 */}
                 {loading ? (
                     <div className="loading">
@@ -193,12 +226,12 @@ const ChatRoomList = () => {
                         <div className="room-count">
                             총 {rooms.length}개의 채팅방이 있습니다.
                         </div>
-                        
+
                         {/* 채팅방 목록 */}
                         {rooms.map((room) => (
                             <div
                                 key={room.id}
-                                className="chat-room"
+                                className={`chat-room ${selectedRoomId === room.id ? 'active' : ''}`}
                                 onClick={() => handleJoinRoom(room.id)}
                             >
                                 <div className="profile-img">
@@ -216,28 +249,34 @@ const ChatRoomList = () => {
                         ))}
                     </div>
                 )}
-                
+
                 {/* 채팅방 생성 버튼 */}
                 <div className="create-room-btn" onClick={handleCreateRoom}>
-                    <i className="fa-solid fa-plus"></i>
+                    <i className="fa-solid fa-plus">생성</i>
                 </div>
-                
+
                 {/* 새로고침 버튼 */}
                 <div className="refresh-btn" onClick={handleRefresh} title="새로고침">
-                    <i className="fa-solid fa-arrows-rotate"></i>
+                    <i className="fa-solid fa-arrows-rotate">새로고침</i>
                 </div>
             </div>
-            
+
             {/* 채팅창 영역 - 우측 검은 영역 */}
             <div className="chat-content-area">
-                <Routes>
-                    <Route path="/:roomId" element={<ChatRoom />} />
-                    <Route path="/" element={
-                        <div className="empty-state">
-                            <p>채팅방을 선택해주세요</p>
-                        </div>
-                    } />
-                </Routes>
+                {selectedRoomId ? (
+                    <ChatRoom
+                        key={selectedRoomId}
+                        roomId={selectedRoomId}
+                        onLeaveRoom={handleLeaveRoom}
+                        refreshRooms={handleRefresh} // 이렇게 새로고침 함수 전달
+                    />
+                ) : (
+                    <div className="empty-state">
+                        <p>채팅방을 선택해주세요</p>
+                    </div>
+                )}
+
+
             </div>
         </div>
     );
