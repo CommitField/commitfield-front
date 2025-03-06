@@ -55,6 +55,20 @@ apiClient.interceptors.response.use(
       };
     }
     
+    // 400 에러 처리 - 더 명확한 오류 메시지 제공
+    if (error.response && error.response.status === 400) {
+      console.error('400 Bad Request:', error.response.data);
+      
+      // 백엔드에서 오는 상세 오류 메시지 활용
+      const errorMessage = error.response.data.message || '요청 처리 중 오류가 발생했습니다.';
+      
+      return Promise.reject({
+        message: errorMessage,
+        status: 400,
+        error: error.response.data
+      });
+    }
+    
     // 개발 중에는 더 자세한 오류 정보 제공
     return Promise.reject({
       message: error.response?.data?.message || '서버 통신 오류가 발생했습니다',
@@ -116,7 +130,12 @@ const ChatService = {
       return response;
     } catch (error) {
       console.error('Error fetching created rooms:', error);
-      throw error;
+      // 에러가 발생했을 때 빈 목록 반환 (선택적)
+      return {
+        success: true,
+        message: "생성한 채팅방을 가져오는 중 오류가 발생했습니다.",
+        data: []
+      };
     }
   },
 
@@ -141,13 +160,22 @@ const ChatService = {
       return response;
     } catch (error) {
       console.error('Error fetching joined rooms:', error);
-      throw error;
+      // 에러가 발생했을 때 빈 목록 반환 (선택적)
+      return {
+        success: true,
+        message: "참여한 채팅방을 가져오는 중 오류가 발생했습니다.",
+        data: []
+      };
     }
   },
 
   // 채팅방 생성 - 캐시 초기화
   createRoom: async (title, userCountMax) => {
     try {
+      if (!title || !userCountMax) {
+        throw new Error('제목과 최대 인원 수는 필수 입력값입니다.');
+      }
+      
       console.log('Creating room with:', { title, userCountMax: parseInt(userCountMax) });
       const response = await apiClient.post('/chat/room', { 
         title, 
@@ -170,6 +198,10 @@ const ChatService = {
   // 채팅방 입장 - 참여 캐시 초기화
   joinRoom: async (roomId) => {
     try {
+      if (!roomId) {
+        throw new Error('채팅방 ID는 필수입니다.');
+      }
+      
       const response = await apiClient.post(`/chat/room/join/${roomId}`);
       
       // 채팅방 참여 성공 시 참여 목록 캐시 초기화
@@ -187,6 +219,10 @@ const ChatService = {
   // 채팅방 나가기 - 캐시 초기화
   leaveRoom: async (roomId) => {
     try {
+      if (!roomId) {
+        throw new Error('채팅방 ID는 필수입니다.');
+      }
+      
       const response = await apiClient.delete(`/chat/room/out/${roomId}`);
       
       // 채팅방 나가기 성공 시 모든 캐시 초기화
@@ -204,6 +240,10 @@ const ChatService = {
   // 채팅방 삭제 - 캐시 초기화
   deleteRoom: async (roomId) => {
     try {
+      if (!roomId) {
+        throw new Error('채팅방 ID는 필수입니다.');
+      }
+      
       const response = await apiClient.delete(`/chat/room/delete/${roomId}`);
       
       // 채팅방 삭제 성공 시 모든 캐시 초기화
@@ -221,6 +261,10 @@ const ChatService = {
   // 채팅 메시지 조회
   getChatMessages: async (roomId, lastId = null) => {
     try {
+      if (!roomId) {
+        throw new Error('채팅방 ID는 필수입니다.');
+      }
+      
       const url = lastId 
         ? `/chat/msg/${roomId}?lastId=${lastId}` 
         : `/chat/msg/${roomId}`;
@@ -233,7 +277,7 @@ const ChatService = {
       console.error('Error fetching messages:', error);
       
       // 다른 종류의 에러인 경우 빈 메시지 목록 반환
-      if (error.status === 500) {
+      if (error.status === 500 || error.status === 400) {
         console.log('Server error, returning empty messages');
         return {
           success: true,
@@ -249,6 +293,14 @@ const ChatService = {
   // 채팅 메시지 전송
   sendMessage: async (roomId, message) => {
     try {
+      if (!roomId || !message) {
+        throw new Error('채팅방 ID와 메시지 내용은 필수입니다.');
+      }
+      
+      if (message.trim() === '') {
+        throw new Error('메시지 내용은 비어있을 수 없습니다.');
+      }
+      
       console.log('Sending message to room', roomId, ':', message);
       const response = await apiClient.post(`/chat/msg/${roomId}`, { message });
       console.log('Send message response:', response);
