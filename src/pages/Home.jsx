@@ -5,13 +5,52 @@ import { Leaf, Sun, Wind, Snowflake, MessageSquare } from 'lucide-react';
 import NotificationModal from '../modals/NotificationModal';
 import { FaBell } from 'react-icons/fa';
 import './CommitStats.css';
+import './profile.css';
 import '../modals/NotificationModal.css';
+import axios from "axios";
+import NotiService from '../services/NotiService';
+import webSocketService from '../services/WebSocketService';
 
 const Home = () => {
   // 알림 모달
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [hasNewNotification, setHasNewNotification] = useState(false);
+
+  const [userInfo, setUserInfo] = useState({});
+  const [userLoading, setUserLoading] = useState(true);
+  const [userError, setUserError] = useState(null);
+
+  const tierEmojis = {
+    SEED: "🌱",
+    SPROUT: "🌿",
+    FLOWER: "🌺",
+    FRUIT: "🍎",
+    TREE: "🌳",
+  };
+
+  // 최대 경험치 값 계산
+  const petExp = userInfo.petExp;  // 실제 경험치
+  const maxExp = userInfo.petGrow === 'EGG' ? 150 : userInfo.petGrow === 'HATCH' ? 300 : 100;
+  const progress = (petExp / maxExp) * 100;
+
+
+    // 사용자 정보 불러오기
+    useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const response = await axios.get("/api/user/info", { withCredentials: true });
+        setUserInfo(response.data);
+      } catch (err) {
+        console.error("Error fetching user info:", err);
+        setUserError("유저 정보를 가져오는 데 실패했습니다.");
+      } finally {
+        setUserLoading(false);
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
 
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
@@ -20,6 +59,7 @@ const Home = () => {
     }
   };
 
+  // 알림 불러오기
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -44,8 +84,8 @@ const Home = () => {
     fetchNotifications();
   }, []);
 
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
   const [totalCommitData, setTotalCommitData] = useState(null);
   const [seasonData, setSeasonData] = useState({
@@ -54,8 +94,47 @@ const Home = () => {
     fall: null,
     winter: null
   });
+  const [connected, setConnected] = useState(false);  // 웹소켓 연결 상태
   const navigate = useNavigate();
 
+  // 메시지 목록을 로드하는 함수
+  const loadNotis = async () => {
+    try {
+        setLoading(true);
+        const response = await NotiService.getNotis();
+        console.log('Noti response:', response);
+        setNotifications(response.data);
+        setLoading(false);
+    } catch (err) {
+        console.error('Error loading Noti:', err);
+        setError('알림 데이터를 가져오는데 실패했습니다.');
+        setLoading(false)
+    }
+};
+
+useEffect(() => {
+  loadNotis();
+
+  // 웹소켓 연결
+  webSocketService.connect();
+
+  // 연결 상태 변경 이벤트 리스너 등록
+  const unsubscribeFromConnection = webSocketService.onConnectionChange(setConnected);
+
+  // 채팅방 구독 시도
+  setTimeout(() => {
+      const success = webSocketService.subscribeToNotificationChannel();
+      console.log('Notis subscription success:', success);
+  }, 1000); // 약간의 지연을 두어 연결이 설정될 시간을 줌
+
+  // 컴포넌트 언마운트 시 이벤트 리스너 제거 및 구독 해제
+  return () => {
+      if (unsubscribeFromConnection) {
+          unsubscribeFromConnection();
+      }
+  };
+}, []);
+  
   useEffect(() => {
     const fetchCommitData = async () => {
       try {
@@ -217,6 +296,58 @@ const Home = () => {
       {isModalOpen && <NotificationModal notifications={notifications} onClose={toggleModal} />}
 
       <div className="content-container">
+
+      {/* 사용자 프로필 */}
+      <div className="flex-box">
+          <div className="profile-container">
+            {/* 왼쪽: 펫 이미지 */}
+            <div className="pet-box">
+{/* FIXME: 펫 이미지 추가 후 아래 주석으로 코드 변경 필요                */}
+              <img
+                src={`/pets/${userInfo.petGrow}_0_128.png`}
+                alt="Pet"
+                className="animated-pet"
+              />
+{/*               <img */}
+{/*                 src={`/pets/${userInfo.petGrow}_${userInfo.petType}_128.png`} */}
+{/*                 alt="Pet" */}
+{/*                 className="animated-pet" */}
+{/*               /> */}
+            </div>
+
+            {/* 오른쪽: 사용자 정보 및 펫 정보 */}
+            <div className="info-box">
+              <div><img src={userInfo.avatarUrl} alt="User Avatar" className="avatar" /> {userInfo.username}</div>
+
+              <div>이번 시즌 커밋 수: {userInfo.seasonCommitCount}</div>
+              <div>티어: {tierEmojis[userInfo.tier] || userInfo.tier} / 마지막 커밋 날짜: {new Date(userInfo.lastCommitted).toLocaleDateString()}</div>
+              {/* <p>가입일: {new Date(userInfo.createdAt).toLocaleDateString()}</p> */}
+
+
+              {/* 펫 정보 */}
+              <div>🐾 펫 정보</div>
+              <div className="exp-bar">
+                <div className="bar">
+                  <div style={{ width: '100%', height: '5px', backgroundColor: '#F3F3F3', borderRadius: '2px' }}>
+                    <div
+                      style={{
+                        width: `${progress}%`, // 실제 경험치에 비례한 너비
+                        height: '100%',
+                        backgroundColor: '#FF69B4', // 핑크색
+                        borderRadius: '2px', // 동그란 모서리
+                      }}
+                    />
+                  </div>
+                </div>
+                <div>{userInfo.petExp} / {maxExp}</div>
+              </div>
+              <div>성장 단계: {userInfo.petGrow}</div>
+            </div>
+          </div>
+        </div>
+
+
+
         <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', paddingLeft: '16px' }}>내 커밋 기록</h2>
 
         {/* 커밋 통계 - 테이블과 너비 동일하게 */}
