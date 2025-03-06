@@ -21,14 +21,16 @@ const ChatRoomList = () => {
             const forceRefresh = true; // 매번 최신 데이터 가져오기
             switch (activeTab) {
                 case 'created':
-                    response = await ChatService.getMyCreatedRooms(forceRefresh);
+                    response = await ChatService.getMyCreatedRooms(0, 100, forceRefresh);
                     break;
                 case 'joined':
-                    response = await ChatService.getMyJoinedRooms(forceRefresh);
+                    response = await ChatService.getMyJoinedRooms(0, 100, forceRefresh);
                     break;
                 default:
-                    response = await ChatService.getRoomList(forceRefresh);
+                    response = await ChatService.getRoomList(0, 100, forceRefresh);
             }
+
+            console.log(`${activeTab} 채팅방 목록 응답:`, response);
 
             // Handle API response
             if (response.data && Array.isArray(response.data)) {
@@ -60,13 +62,13 @@ const ChatRoomList = () => {
                 const joinedResponse = await ChatService.getMyJoinedRooms();
                 const joinedRooms = joinedResponse.data || [];
                 const isAlreadyJoined = joinedRooms.some(room => room.id === roomId);
-                
+
                 if (!isAlreadyJoined) {
                     // Call join API if not already joined
                     await ChatService.joinRoom(roomId);
                 }
             }
-            
+
             // Navigate to the room directly in the current view
             navigate(`/chat-rooms/${roomId}`);
         } catch (err) {
@@ -87,21 +89,25 @@ const ChatRoomList = () => {
     // 로컬 스토리지로부터 채팅방 생성/변경/삭제 이벤트 감지
     useEffect(() => {
         const checkForChanges = () => {
-            // 채팅방 생성 이벤트 확인
-            const createdChange = localStorage.getItem('chatRoomCreated');
-            if (createdChange) {
-                // 변경사항이 있으면 목록 새로고침
-                setRefreshTrigger(prev => prev + 1);
-                // 처리 후 로컬스토리지 항목 제거
-                localStorage.removeItem('chatRoomCreated');
-            }
-            
-            // 채팅방 나가기/삭제 이벤트 확인
+            // 참여 방 새로고침 플래그 확인
+            const refreshJoinedOnly = localStorage.getItem('refreshJoinedOnly');
+
+            // 방 변경 이벤트
             const roomChanged = localStorage.getItem('chatRoomChanged');
             if (roomChanged) {
-                // 변경사항이 있으면 목록 새로고침
-                setRefreshTrigger(prev => prev + 1);
-                // 처리 후 로컬스토리지 항목 제거
+                if (refreshJoinedOnly === 'true') {
+                    // 현재 '참여 중인 채팅방' 탭이거나 참여 방만 업데이트하는 경우
+                    if (activeTab === 'joined') {
+                        console.log('참여 중인 채팅방 목록만 새로고침');
+                        setRefreshTrigger(prev => prev + 1);
+                    }
+                    localStorage.removeItem('refreshJoinedOnly');
+                } else {
+                    // 일반적인 모든 탭 새로고침
+                    console.log('모든 탭 새로고침');
+                    setRefreshTrigger(prev => prev + 1);
+                }
+
                 localStorage.removeItem('chatRoomChanged');
             }
         };
@@ -118,7 +124,7 @@ const ChatRoomList = () => {
         return () => {
             window.removeEventListener('storage', handleStorageChange);
         };
-    }, []);
+    }, [activeTab]);
 
     // 목록 로드 효과
     useEffect(() => {
@@ -153,26 +159,26 @@ const ChatRoomList = () => {
             <div className="chat-list-container">
                 {/* 채팅방 목록 헤더 */}
                 <div className="chat-tabs">
-                    <div 
+                    <div
                         className={`chat-tab ${activeTab === 'all' ? 'active' : ''}`}
                         onClick={() => handleTabChange('all')}
                     >
                         전체 채팅방
                     </div>
-                    <div 
+                    <div
                         className={`chat-tab ${activeTab === 'created' ? 'active' : ''}`}
                         onClick={() => handleTabChange('created')}
                     >
                         내가 만든 채팅방
                     </div>
-                    <div 
+                    <div
                         className={`chat-tab ${activeTab === 'joined' ? 'active' : ''}`}
                         onClick={() => handleTabChange('joined')}
                     >
                         참여 중인 채팅방
                     </div>
                 </div>
-                
+
                 {/* 채팅방 목록 */}
                 {loading ? (
                     <div className="loading">
@@ -193,7 +199,7 @@ const ChatRoomList = () => {
                         <div className="room-count">
                             총 {rooms.length}개의 채팅방이 있습니다.
                         </div>
-                        
+
                         {/* 채팅방 목록 */}
                         {rooms.map((room) => (
                             <div
@@ -216,18 +222,18 @@ const ChatRoomList = () => {
                         ))}
                     </div>
                 )}
-                
+
                 {/* 채팅방 생성 버튼 */}
                 <div className="create-room-btn" onClick={handleCreateRoom}>
                     <i className="fa-solid fa-plus"></i>
                 </div>
-                
+
                 {/* 새로고침 버튼 */}
                 <div className="refresh-btn" onClick={handleRefresh} title="새로고침">
                     <i className="fa-solid fa-arrows-rotate"></i>
                 </div>
             </div>
-            
+
             {/* 채팅창 영역 - 우측 검은 영역 */}
             <div className="chat-content-area">
                 <Routes>
