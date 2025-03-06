@@ -17,15 +17,9 @@ const Home = () => {
   const [hasNewNotification, setHasNewNotification] = useState(false);
 
   const [userInfo, setUserInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [userLoading, setUserLoading] = useState(true);
+  const [userError, setUserError] = useState(null);
 
-  const toggleModal = () => {
-    setIsModalOpen(!isModalOpen);
-    if (isModalOpen) {
-      setHasNewNotification(false); // 모달을 열면 새로운 알림 표시 제거
-    }
-  };
     // 사용자 정보 불러오기
     useEffect(() => {
     const fetchUserInfo = async () => {
@@ -34,17 +28,24 @@ const Home = () => {
         setUserInfo(response.data);
       } catch (err) {
         console.error("Error fetching user info:", err);
-        setError("유저 정보를 가져오는 데 실패했습니다.");
+        setUserError("유저 정보를 가져오는 데 실패했습니다.");
       } finally {
-        setLoading(false);
+        setUserLoading(false);
       }
     };
 
     fetchUserInfo();
   }, []);
 
-  if (loading) return <p>로딩 중...</p>;
-  if (error) return <p>{error}</p>;
+  if (userLoading) return <p>로딩 중...</p>;
+  if (userError) return <p>{error}</p>;
+
+  const toggleModal = () => {
+    setIsModalOpen(!isModalOpen);
+    if (isModalOpen) {
+      setHasNewNotification(false); // 모달을 열면 새로운 알림 표시 제거
+    }
+  };
 
   // 알림 불러오기
   useEffect(() => {
@@ -83,13 +84,6 @@ const Home = () => {
   });
   const [connected, setConnected] = useState(false);  // 웹소켓 연결 상태
   const navigate = useNavigate();
-
-  const toggleModal = () => {
-    setIsModalOpen(!isModalOpen);
-    if (isModalOpen) {
-      setHasNewNotification(false); // 모달을 열면 새로운 알림 표시 제거
-    }
-  };
 
   // 메시지 목록을 로드하는 함수
   const loadNotis = async () => {
