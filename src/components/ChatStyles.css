@@ -189,53 +189,41 @@
 }
 
 /* 채팅 생성 버튼 */
-.create-room-btn {
-    position: fixed;
-    bottom: 20px;
-    left: 150px;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: var(--white);
-    border: 2px solid var(--primary-green);
-    color: var(--primary-green);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 24px;
-    cursor: pointer;
-    z-index: 10;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.create-room-btn:hover {
-    background-color: var(--primary-green);
-    color: var(--white);
-}
-
-/* 새로고침 버튼 */
+.create-room-btn,
 .refresh-btn {
-    position: fixed;
-    bottom: 80px;
-    left: 150px;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: var(--white);
-    border: 2px solid var(--primary-green);
-    color: var(--primary-green);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 20px;
-    cursor: pointer;
-    z-index: 10;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.refresh-btn:hover {
+    position: static;
+    /* Remove fixed positioning */
+    width: auto;
+    /* Remove fixed width */
+    height: auto;
+    /* Remove fixed height */
+    border-radius: 20px;
+    /* Rounded corners but not circular */
     background-color: var(--primary-green);
     color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 15px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.create-room-btn i,
+.refresh-btn i {
+    margin-right: 5px;
+    font-size: 16px;
+}
+
+
+.create-room-btn:hover,
+.refresh-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* 채팅방 생성 폼 */
@@ -364,12 +352,28 @@
 }
 
 /* 채팅 메시지 영역 */
+/* 채팅 메시지 영역에 최대 높이와 스크롤 적용 */
 .chat-messages {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
+    /* 세로 스크롤 적용 */
+    max-height: calc(100vh - 180px);
+    /* 채팅 입력창과 헤더를 제외한 높이로 설정 */
     display: flex;
     flex-direction: column;
+}
+
+/* 채팅창 전체가 flex로 구성되도록 */
+.chat-window {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--light-green);
+    height: 100%;
+    /* 전체 높이 사용 */
+    overflow: hidden;
+    /* 넘치는 부분 숨김 */
 }
 
 /* 날짜 구분선 */
@@ -504,11 +508,11 @@
 .chat-input {
     display: flex;
     align-items: center;
-    padding: 15px;
-    background-color: #222;
-    /* 전체 입력 영역 배경색 변경 */
+    padding: 15px 20px;
+    background-color: #2a2a2a;
+    /* 배경색 약간 밝게 조정 */
     border-top: 1px solid #444;
-    /* 경계선 색상 변경 */
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
 }
 
 /* 버튼 색상도 조정 */
@@ -526,40 +530,105 @@
 .chat-input input {
     flex: 1;
     border: none;
-    padding: 10px;
+    padding: 12px 16px;
     font-size: 15px;
     outline: none;
     color: white;
-    /* 글자색을 흰색으로 변경 */
-    background-color: #222;
-    /* 이미 검은색 배경이라면 배경색은 그대로 유지하거나 약간 밝게 */
-    border-radius: 5px;
-    /* 입력창에 둥근 모서리 추가 */
+    background-color: #333;
+    /* 입력창 배경색 */
+    border-radius: 20px;
+    /* 더 둥근 모서리 */
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    margin-right: 10px;
+}
+
+.chat-input input:focus {
+    background-color: #3a3a3a;
+    /* 포커스 시 약간 밝은 배경 */
+    box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.3), 0 0 0 2px rgba(63, 178, 127, 0.3);
 }
 
 /* 플레이스홀더 텍스트 색상도 변경 */
 .chat-input input::placeholder {
     color: #aaa;
-    /* 흐린 회색으로 설정 */
 }
 
 .chat-input .send-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
     background-color: var(--primary-green);
     color: white;
     border: none;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    border-radius: 20px;
+    /* 둥근 모서리 */
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: 500;
     cursor: pointer;
-    margin-left: 10px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.chat-input .send-btn i {
+    margin-right: 5px;
+    font-size: 16px;
+}
+
+.chat-input .send-btn:hover {
+    background-color: #45c28d;
+    /* 호버 시 더 밝은 녹색 */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.chat-input .send-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
 }
 
 .chat-input .send-btn:disabled {
-    background-color: var(--medium-gray);
+    background-color: #555;
+    color: #999;
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .chat-input {
+        padding: 12px 15px;
+    }
+
+    .chat-input input {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+
+    .chat-input .send-btn {
+        padding: 8px 15px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 576px) {
+    .chat-input {
+        padding: 10px;
+    }
+
+    .chat-input input {
+        padding: 8px 12px;
+    }
+
+    .chat-input .send-btn {
+        padding: 8px 12px;
+    }
+
+    .chat-input .send-btn i {
+        margin-right: 0;
+    }
 }
 
 .chat-content-area {
@@ -636,7 +705,8 @@
     }
 
     .chat-list-container {
-        width: 260px;
+        position: relative;
+        /* For absolute positioning of buttons */
     }
 
     .create-room-btn {
@@ -720,4 +790,36 @@
 
 .empty-state p {
     margin: 10px 0;
+}
+
+.chat-action-buttons {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+}
+
+@media (max-width: 768px) {
+    .chat-action-buttons {
+        top: 10px;
+        right: 10px;
+        gap: 5px;
+    }
+
+    .create-room-btn,
+    .refresh-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+}
+
+/* For mobile layouts */
+@media (max-width: 576px) {
+    .chat-action-buttons {
+        top: 70px;
+        /* Adjust based on your mobile header height */
+        right: 10px;
+    }
 }
