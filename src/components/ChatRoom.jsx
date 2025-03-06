@@ -234,6 +234,11 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
         // 이미 액션이 진행 중이면 중복 실행 방지
         if (actionInProgress) return;
 
+        // Confirm before deleting
+        if (!window.confirm('채팅방을 정말 나가시겠습니까?')) {
+            return;
+        }
+
         setActionInProgress(true); // 액션 시작
 
         // 먼저 UI 업데이트
