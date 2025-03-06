@@ -236,7 +236,7 @@ class WebSocketService {
     try {
       console.log('Subscribing to notification channel...');
 
-      const notificationSubscription = this.stompClient.subscribe(`/sub/notification`, (message) => {
+      const notificationSubscription = this.stompClient.subscribe(`/topic/notification`, (message) => {
         try {
           console.log('Received notification:', message);
           const notification = JSON.parse(message.body);

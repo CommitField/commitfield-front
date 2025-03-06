@@ -71,30 +71,6 @@ useEffect(() => {
       }
   };
 }, []);
-
-  // useEffect(() => {
-  //   const fetchNotifications = async () => {
-  //     try {
-  //       const response = await fetch('/api/notifications', { credentials: 'include' });
-  //       if (!response.ok) {
-  //         throw new Error('알림 데이터를 가져오는데 실패했습니다');
-  //       }
-
-  //       const data = await response.json();
-  //       console.log(data.data);
-  //       setNotifications(data.data);
-
-  //       // 새로운 알림이 있는지 확인
-  //       if (data.length > 0) {
-  //         setHasNewNotification(true);
-  //       }
-  //     } catch (error) {
-  //       console.error('알림 데이터 가져오기 오류:', error);
-  //     }
-  //   };
-
-  //   fetchNotifications();
-  // }, []);
   
   useEffect(() => {
     const fetchCommitData = async () => {

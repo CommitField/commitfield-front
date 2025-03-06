@@ -63,16 +63,16 @@ const NotiService = {
   getNotis: async () => {
     try {
       const url = `/api/notifications`;
-      console.log('Fetching messages from:', url);
+      console.log('Fetching Notis from:', url);
       const response = await apiClient.get(url);
       console.log('Noti response:', response);
       return response;
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error('Error fetching Notis:', error);
       
       // 다른 종류의 에러인 경우 빈 메시지 목록 반환
       if (error.status === 500) {
-        console.log('Server error, returning empty messages');
+        console.log('Server error, returning empty Notis');
         return {
           success: true,
           message: "알림을 불러오는데 문제가 발생했습니다.",
