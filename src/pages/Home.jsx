@@ -6,6 +6,7 @@ import NotificationModal from '../modals/NotificationModal';
 import { FaBell } from 'react-icons/fa';
 import './CommitStats.css';
 import '../modals/NotificationModal.css';
+import axios from "axios";
 
 const Home = () => {
   // 알림 모달
@@ -13,13 +14,37 @@ const Home = () => {
   const [notifications, setNotifications] = useState([]);
   const [hasNewNotification, setHasNewNotification] = useState(false);
 
+  const [userInfo, setUserInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
     if (isModalOpen) {
       setHasNewNotification(false); // 모달을 열면 새로운 알림 표시 제거
     }
   };
+    // 사용자 정보 불러오기
+    useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const response = await axios.get("/api/user/info", { withCredentials: true });
+        setUserInfo(response.data);
+      } catch (err) {
+        console.error("Error fetching user info:", err);
+        setError("유저 정보를 가져오는 데 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchUserInfo();
+  }, []);
+
+  if (loading) return <p>로딩 중...</p>;
+  if (error) return <p>{error}</p>;
+
+  // 알림 불러오기
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -217,6 +242,42 @@ const Home = () => {
       {isModalOpen && <NotificationModal notifications={notifications} onClose={toggleModal} />}
 
       <div className="content-container">
+
+      {/* 사용자 프로필 */}
+      <div style={{ display: "flex", alignItems: "center", gap: "20px", padding: "20px", border: "1px solid #ddd", borderRadius: "10px" }}>
+        {/* 왼쪽: 펫 이미지 */}
+        <div>
+          <img src={`/images/pets/${userInfo.petType}.png`} alt="Pet" width={128} height={128} />
+        </div>
+
+        {/* 오른쪽: 사용자 정보 및 펫 정보 */}
+        <div style={{ flex: 1 }}>
+          <h2>{userInfo.username}의 프로필</h2>
+          <img src={userInfo.avatarUrl} alt="User Avatar" width={100} style={{ borderRadius: "50%" }} />
+          <p>이메일: {userInfo.email}</p>
+          <p>티어: {userInfo.tier}</p>
+          <p>총 커밋 수: {userInfo.commitCount}</p>
+          <p>가입일: {new Date(userInfo.createdAt).toLocaleDateString()}</p>
+          <p>마지막 커밋 날짜: {new Date(userInfo.lastCommitted).toLocaleDateString()}</p>
+
+          {/* 펫 정보 */}
+          <h3>🐾 펫 정보</h3>
+          <p>펫 타입: {userInfo.petType}</p>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ width: "200px", height: "30px" }}>
+              <Bar data={expData} options={expOptions} />
+            </div>
+            <p>
+              {userInfo.petExp} / 100
+            </p>
+          </div>
+          <p>성장 단계: {userInfo.petGrow}</p>
+        </div>
+      </div>
+
+
+
+
         <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', paddingLeft: '16px' }}>내 커밋 기록</h2>
 
         {/* 커밋 통계 - 테이블과 너비 동일하게 */}
