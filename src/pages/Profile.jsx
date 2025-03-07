@@ -5,10 +5,10 @@ import Stomp from "stompjs";
 const Profile = ({ userInfo }) => {
   const [seasonCommitCount, setSeasonCommitCount] = useState(userInfo.seasonCommitCount);
   const [petExp, setPetExp] = useState(userInfo.petExp);
-  const [username, setUsername] = useState(userInfo.username);
-  const [client, setClient] = useState(null); // WebSocket 클라이언트 상태
-  const maxExp = userInfo.petGrow === 'EGG' ? 150 : userInfo.petGrow === 'HATCH' ? 300 : 300;
   const [commitCount, setCommitCount] = useState(0);
+  const [client, setClient] = useState(null); // WebSocket 클라이언트 상태
+
+  const maxExp = userInfo.petGrow === "EGG" ? 150 : userInfo.petGrow === "HATCH" ? 300 : 300;
   const tierEmojis = {
     SEED: "🌱",
     SPROUT: "🌿",
@@ -20,9 +20,15 @@ const Profile = ({ userInfo }) => {
   // 경험치 바 계산
   const progress = (petExp / maxExp) * 100;
 
+  // userInfo가 변경되면 값 업데이트
   useEffect(() => {
-    // username이 없으면 대기 (WebSocket 연결 X)
-    if (!username) {
+    setSeasonCommitCount(userInfo.seasonCommitCount);
+    setPetExp(userInfo.petExp);
+  }, [userInfo]);
+
+  useEffect(() => {
+    // userInfo.username이 없으면 WebSocket 연결 안 함
+    if (!userInfo.username) {
       console.log("Username is not available yet, waiting...");
       return;
     }
@@ -45,6 +51,7 @@ const Profile = ({ userInfo }) => {
       newClient.subscribe(`/topic/commit/${userInfo.username}`, (message) => {
         const newCommitCount = JSON.parse(message.body);
         setCommitCount(newCommitCount);
+
         // 시즌 커밋 수 업데이트
         setSeasonCommitCount((prev) => prev + newCommitCount);
 
@@ -65,18 +72,14 @@ const Profile = ({ userInfo }) => {
         });
       }
     };
-  }, [username]); // username이 변경될 때마다 WebSocket 연결
+  }, [userInfo.username]); // username이 변경될 때마다 WebSocket 연결
 
   return (
     <div className="flex-box">
       <div className="profile-container">
         {/* 왼쪽: 펫 이미지 */}
         <div className="pet-box">
-          <img
-            src={`/pets/${userInfo.petGrow}_0_128.png`}
-            alt="Pet"
-            className="animated-pet"
-          />
+          <img src={`/pets/${userInfo.petGrow}_0_128.png`} alt="Pet" className="animated-pet" />
         </div>
 
         {/* 오른쪽: 사용자 정보 및 펫 정보 */}
@@ -92,18 +95,20 @@ const Profile = ({ userInfo }) => {
           <div>🐾 펫 정보</div>
           <div className="exp-bar">
             <div className="bar">
-              <div style={{ width: '100%', height: '5px', backgroundColor: '#F3F3F3', borderRadius: '2px' }}>
+              <div style={{ width: "100%", height: "5px", backgroundColor: "#F3F3F3", borderRadius: "2px" }}>
                 <div
                   style={{
                     width: `${progress}%`, // 경험치 비율 적용
-                    height: '100%',
-                    backgroundColor: '#FF69B4',
-                    borderRadius: '2px',
+                    height: "100%",
+                    backgroundColor: "#FF69B4",
+                    borderRadius: "2px",
                   }}
                 />
               </div>
             </div>
-            <div>{petExp} / {maxExp}</div>
+            <div>
+              {petExp} / {maxExp}
+            </div>
           </div>
           <div>성장 단계: {userInfo.petGrow}</div>
         </div>
