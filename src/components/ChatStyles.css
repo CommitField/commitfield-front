@@ -1338,3 +1338,62 @@
         transform: translateX(5px);
     }
 }
+
+/* 홈 버튼 스타일 - ChatStyles.css에 추가 */
+
+.home-btn {
+    position: static;
+    width: auto;
+    height: auto;
+    border-radius: 20px;
+    background-color: #3b82f6;
+    /* 파란색 배경 - 다른 버튼과 구분 */
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 15px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.home-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    background-color: #2563eb;
+    /* 호버 시 더 진한 파란색 */
+}
+
+/* 채팅 상단 버튼 그룹 조정 - 기존에 있지만 gap 조정 */
+.chat-action-buttons {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+}
+
+/* 모바일 레이아웃에서 홈 버튼 조정 */
+@media (max-width: 768px) {
+    .home-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .chat-action-buttons {
+        flex-wrap: wrap;
+        /* 공간이 부족하면 버튼 줄바꿈 */
+    }
+}
+
+@media (max-width: 576px) {
+    .chat-action-buttons {
+        top: 70px;
+        right: 10px;
+    }
+}

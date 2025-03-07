@@ -5,6 +5,7 @@ import ChatRoom from './ChatRoom';
 import PasswordModal from './PasswordModal';
 import './ChatStyles.css';
 import { API_BACKEND_URL } from '../config';
+import { Home } from 'lucide-react'; // Import Home icon from lucide-react
 
 const ChatRoomList = () => {
     const [rooms, setRooms] = useState([]);
@@ -173,6 +174,11 @@ const ChatRoomList = () => {
         navigate('/create-room');
     };
 
+    // 홈으로 돌아가기
+    const goToHome = () => {
+        navigate('/home');
+    };
+
     // 탭 변경 시 목록 새로고침
     const handleTabChange = (tab) => {
         setActiveTab(tab);
@@ -272,6 +278,9 @@ const ChatRoomList = () => {
             <div className="chat-list-container">
                 {/* 새로고침/생성 버튼 */}
                 <div className="chat-action-buttons">
+                    <div className="home-btn" onClick={goToHome} title="홈으로">
+                        <Home size={18} style={{ marginRight: '5px' }} />홈으로
+                    </div>
                     <div className="refresh-btn" onClick={handleRefresh} title="새로고침">
                         <i className="fa-solid fa-arrows-rotate"></i>새로고침
                     </div>
@@ -332,7 +341,7 @@ const ChatRoomList = () => {
                             >
                                 <div className="profile-img">
                                     {room.imageUrl ? (
-                                        <img 
+                                        <img
                                             src={getImageUrl(room.imageUrl)}
                                             alt={room.title}
                                             className="room-image"
