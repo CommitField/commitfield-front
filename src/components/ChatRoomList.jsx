@@ -4,6 +4,7 @@ import ChatService from '../services/ChatService';
 import ChatRoom from './ChatRoom';
 import PasswordModal from './PasswordModal';
 import './ChatStyles.css';
+import { API_BACKEND_URL } from '../config';
 
 const ChatRoomList = () => {
     const [rooms, setRooms] = useState([]);
@@ -255,6 +256,16 @@ const ChatRoomList = () => {
     // Check if room list is empty
     const isRoomsEmpty = rooms.length === 0;
 
+    const getImageUrl = (imageUrl) => {
+        if (!imageUrl) return null;
+        console.log('Original imageUrl:', imageUrl); // 디버깅용
+        // API_BACKEND_URL이 이미 슬래시로 끝나지 않는지 확인
+        const baseUrl = API_BACKEND_URL.endsWith('/') ? API_BACKEND_URL.slice(0, -1) : API_BACKEND_URL;
+        const fullUrl = `${baseUrl}${imageUrl}`;
+        console.log('Full imageUrl:', fullUrl); // 디버깅용
+        return fullUrl;
+    };
+
     return (
         <div className="chat-layout">
             {/* 채팅방 목록 컨테이너 */}
@@ -320,8 +331,22 @@ const ChatRoomList = () => {
                                 onClick={() => handleJoinRoom(room.id)}
                             >
                                 <div className="profile-img">
-                                    {/* 프로필 이미지 또는 잠금 아이콘 표시 */}
-                                    {room.isPrivate && <i className="fa-solid fa-lock" style={{ color: '#e74c3c' }}></i>}
+                                    {room.imageUrl ? (
+                                        <img 
+                                            src={getImageUrl(room.imageUrl)}
+                                            alt={room.title}
+                                            className="room-image"
+                                            onError={(e) => {
+                                                console.log('Image load failed:', room.imageUrl);
+                                                e.target.onerror = null;
+                                                e.target.src = '/default-room.png';
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="default-room-image">
+                                            <i className="fa-solid fa-comments"></i>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="chat-info">
                                     <div className="chat-name">
