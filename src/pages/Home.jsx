@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { API_BACKEND_URL, API_FRONT_URL } from "../config";
 import { Leaf, Sun, Wind, Snowflake, MessageSquare } from 'lucide-react';
 import NotificationModal from '../modals/NotificationModal';
+import Profile from '../pages/Profile';
 import { FaBell } from 'react-icons/fa';
 import './CommitStats.css';
+import './profile.css';
 import '../modals/NotificationModal.css';
+import axios from "axios";
 import NotiService from '../services/NotiService';
 import webSocketNotificationService from '../services/WebSocketNotificationService';
 
@@ -14,6 +17,11 @@ const Home = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [hasNewNotification, setHasNewNotification] = useState(false);
+
+  const [userInfo, setUserInfo] = useState({});
+  const [userLoading, setUserLoading] = useState(true);
+  const [userError, setUserError] = useState(null);
+  
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
@@ -26,6 +34,24 @@ const Home = () => {
   });
   const [connected, setConnected] = useState(false);  // 웹소켓 연결 상태
   const navigate = useNavigate();
+
+
+    // 사용자 정보 불러오기
+    useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const response = await axios.get("/api/user/info", { withCredentials: true });
+        setUserInfo(response.data);
+      } catch (err) {
+        console.error("Error fetching user info:", err);
+        setUserError("유저 정보를 가져오는 데 실패했습니다.");
+      } finally {
+        setUserLoading(false);
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
 
   const toggleModal = async () => {
     setIsModalOpen(!isModalOpen);
@@ -308,6 +334,14 @@ useEffect(() => {
       {isModalOpen && <NotificationModal notifications={notifications} onClose={toggleModal} />}
 
       <div className="content-container">
+
+      {/* 사용자 프로필 */}
+      <div className="flex-box">
+         <Profile userInfo={userInfo} />
+      </div>
+
+
+
         <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', paddingLeft: '16px' }}>내 커밋 기록</h2>
 
         {/* 커밋 통계 - 테이블과 너비 동일하게 */}

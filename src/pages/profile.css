@@ -1,0 +1,74 @@
+@keyframes breathe {
+  0%, 100% {
+    transform: scaleY(1); /* 원래 크기 */
+  }
+  50% {
+    transform: scaleY(0.8); /* 0.8배로 작아짐 */
+  }
+}
+
+h2 {
+    color: #222222;
+}
+
+
+.animated-pet {
+  animation: breathe 1.5s infinite ease-in-out;
+}
+
+.flex-box{
+    width:100%;
+    display: flex;
+    justify-content: center;
+}
+
+.profile-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 15px;
+  width: 750px;
+  height: 140px;
+  background-color: #fefefe;
+  color: #010101;
+  border: 1px solid #fff;
+  border-radius: 10px;
+  line-height: 1.4;
+}
+
+.pet-box {
+  width: 128px;
+  height: 128px;
+  border: 1px solid #ff8a9e;
+  background-image: url('/pets/BACK.png');
+}
+.pet-box img {
+  width: 128px;
+  height: 128px;
+}
+
+.info-box {
+  flex: 1;
+}
+
+.info-box img {
+  width: 32px;
+  height: 32px;
+}
+.avatar {
+  width: 100px;
+  border-radius: 50%;
+}
+
+.exp-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bar {
+    width: 200px;
+    display: flex;
+    align-items: center;
+    height: 30px;
+}
