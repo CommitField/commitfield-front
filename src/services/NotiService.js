@@ -59,6 +59,28 @@ const NotiService = {
     cache.clearCache();
   },
 
+  markAsRead: async(notificationIds) => {
+    try {
+        const response = await fetch(`${API_BACKEND_URL}/api/notifications/read`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ notificationIds })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to mark notifications as read');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error marking notifications as read:', error);
+        throw error;
+    }
+  },
+
   // 알림 조회
   getNotis: async () => {
     try {
