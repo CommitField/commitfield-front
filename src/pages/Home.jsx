@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_BACKEND_URL, API_FRONT_URL } from "../config";
 import { Leaf, Sun, Wind, Snowflake, MessageSquare } from 'lucide-react';
 import NotificationModal from '../modals/NotificationModal';
+import Profile from '../pages/Profile';
 import { FaBell } from 'react-icons/fa';
 import './CommitStats.css';
 import './profile.css';
@@ -299,52 +300,8 @@ useEffect(() => {
 
       {/* 사용자 프로필 */}
       <div className="flex-box">
-          <div className="profile-container">
-            {/* 왼쪽: 펫 이미지 */}
-            <div className="pet-box">
-{/* FIXME: 펫 이미지 추가 후 아래 주석으로 코드 변경 필요                */}
-              <img
-                src={`/pets/${userInfo.petGrow}_0_128.png`}
-                alt="Pet"
-                className="animated-pet"
-              />
-{/*               <img */}
-{/*                 src={`/pets/${userInfo.petGrow}_${userInfo.petType}_128.png`} */}
-{/*                 alt="Pet" */}
-{/*                 className="animated-pet" */}
-{/*               /> */}
-            </div>
-
-            {/* 오른쪽: 사용자 정보 및 펫 정보 */}
-            <div className="info-box">
-              <div><img src={userInfo.avatarUrl} alt="User Avatar" className="avatar" /> {userInfo.username}</div>
-
-              <div>이번 시즌 커밋 수: {userInfo.seasonCommitCount}</div>
-              <div>티어: {tierEmojis[userInfo.tier] || userInfo.tier} / 마지막 커밋 날짜: {new Date(userInfo.lastCommitted).toLocaleDateString()}</div>
-              {/* <p>가입일: {new Date(userInfo.createdAt).toLocaleDateString()}</p> */}
-
-
-              {/* 펫 정보 */}
-              <div>🐾 펫 정보</div>
-              <div className="exp-bar">
-                <div className="bar">
-                  <div style={{ width: '100%', height: '5px', backgroundColor: '#F3F3F3', borderRadius: '2px' }}>
-                    <div
-                      style={{
-                        width: `${progress}%`, // 실제 경험치에 비례한 너비
-                        height: '100%',
-                        backgroundColor: '#FF69B4', // 핑크색
-                        borderRadius: '2px', // 동그란 모서리
-                      }}
-                    />
-                  </div>
-                </div>
-                <div>{userInfo.petExp} / {maxExp}</div>
-              </div>
-              <div>성장 단계: {userInfo.petGrow}</div>
-            </div>
-          </div>
-        </div>
+         <Profile userInfo={userInfo} />
+      </div>
 
 
 
