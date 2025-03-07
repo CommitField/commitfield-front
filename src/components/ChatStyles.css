@@ -800,8 +800,7 @@
 
 .chat-content-area {
     flex: 1;
-    background-color: #222;
-    /* 검은색 배경 */
+    background-color: #c4f871;
     display: flex;
     flex-direction: column;
 }
@@ -939,7 +938,7 @@
 /* 채팅 콘텐츠 영역 (우측 검은 영역) */
 .chat-content-area {
     flex: 1;
-    background-color: #222;
+    background-color: #f0fbf1;
     /* 검은색 배경 */
     display: flex;
     flex-direction: column;
@@ -950,7 +949,7 @@
     justify-content: center;
     align-items: center;
     height: 100%;
-    color: #fff;
+    color: #222;
     font-size: 18px;
     flex-direction: column;
 }
