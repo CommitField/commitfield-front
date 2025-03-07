@@ -138,15 +138,34 @@
 }
 
 .chat-room .profile-img {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: var(--pink);
-    margin-right: 15px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    width: 60px;
+    height: 60px;
+    min-width: 60px;
+    border-radius: 8px;
     overflow: hidden;
+    margin-right: 12px;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-room .room-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.chat-room .default-room-image {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e9ecef;
+    color: #6c757d;
+    font-size: 24px;
 }
 
 .chat-room .chat-info {

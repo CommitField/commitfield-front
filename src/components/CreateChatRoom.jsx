@@ -8,6 +8,8 @@ const CreateChatRoom = () => {
     const [userCountMax, setUserCountMax] = useState(10);
     const [password, setPassword] = useState('');
     const [isPrivate, setIsPrivate] = useState(false);
+    const [file, setFile] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState(null);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
@@ -60,40 +62,52 @@ const CreateChatRoom = () => {
         return Object.keys(newErrors).length === 0;
     };
 
+    const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        if (selectedFile) {
+            // 파일 정보 로깅
+            console.log('Selected file:', {
+                name: selectedFile.name,
+                type: selectedFile.type,
+                size: selectedFile.size
+            });
+
+            // 파일 크기 검사 (5MB)
+            if (selectedFile.size > 5 * 1024 * 1024) {
+                setErrors({ ...errors, file: '파일 크기는 5MB를 초과할 수 없습니다.' });
+                return;
+            }
+            
+            // 이미지 파일 타입 검사
+            if (!selectedFile.type.startsWith('image/')) {
+                setErrors({ ...errors, file: '이미지 파일만 업로드 가능합니다.' });
+                return;
+            }
+
+            setFile(selectedFile);
+            setPreviewUrl(URL.createObjectURL(selectedFile));
+            setErrors({ ...errors, file: null });
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        if (!validateForm()) {
-            return;
-        }
+        if (!validateForm()) return;
 
         setLoading(true);
         try {
-            // 비공개방이 아니면 비밀번호 없이 전송
-            const roomData = {
-                title,
-                userCountMax,
-                ...(isPrivate && { password })
-            };
-
-            console.log('Creating room with:', roomData);
-            const response = await ChatService.createRoom(roomData.title, roomData.userCountMax, roomData.password);
-            console.log('Create room response:', response);
-
+            console.log('Submitting form with file:', file);
+            const response = await ChatService.createRoom(title, userCountMax, file);
+            
             if (response && !response.errorCode) {
-                // 성공 메시지 표시
                 alert('채팅방이 성공적으로 생성되었습니다.');
-
-                // 로컬 스토리지를 사용하여 상태 갱신 트리거
                 localStorage.setItem('chatRoomChanged', Date.now().toString());
-
-                // 채팅방 목록으로 이동
                 navigate('/chat-rooms', { replace: true });
             } else {
                 alert(response.message || '채팅방 생성에 실패했습니다.');
             }
         } catch (err) {
-            console.error('Error creating room:', err);
+            console.error('Error in handleSubmit:', err);
             alert(err.message || '채팅방 생성에 실패했습니다.');
         } finally {
             setLoading(false);
@@ -172,6 +186,26 @@ const CreateChatRoom = () => {
                                 )}
                             </div>
                         )}
+
+                        <div className="form-group">
+                            <label className="form-label">채팅방 이미지</label>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className="form-control"
+                            />
+                            {errors.file && <p className="error-message">{errors.file}</p>}
+                            {previewUrl && (
+                                <div className="image-preview">
+                                    <img 
+                                        src={previewUrl} 
+                                        alt="미리보기" 
+                                        style={{ maxWidth: '200px', maxHeight: '200px' }}
+                                    />
+                                </div>
+                            )}
+                        </div>
 
                         <div className="form-actions">
                             <button

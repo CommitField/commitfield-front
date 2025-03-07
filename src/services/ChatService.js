@@ -152,27 +152,43 @@ const ChatService = {
     }
   },
 
-  createRoom: async (title, userCountMax) => {
+  createRoom: async (title, userCountMax, file = null) => {
     try {
       if (!title || !userCountMax) {
         throw new Error('제목과 최대 인원 수는 필수 입력값입니다.');
       }
 
-      console.log('Creating room with:', { title, userCountMax: parseInt(userCountMax) });
-      const response = await apiClient.post('/chat/room', {
-        title,
-        userCountMax: parseInt(userCountMax)
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('userCountMax', parseInt(userCountMax));
+      
+      // 파일 업로드 디버깅
+      if (file) {
+        console.log('Uploading file:', file);
+        formData.append('file', file);
+      }
+
+      // FormData 내용 확인
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+      }
+
+      console.log('Creating room with:', { title, userCountMax, file });
+      const response = await apiClient.post('/chat/room', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
+
       console.log('Create room response:', response);
 
       if (response && !response.errorCode) {
-        // 모든 캐시 초기화
         cache.clearCache();
       }
 
       return response;
     } catch (error) {
-      console.error('Error creating room:', error);
+      console.error('Error creating room:', error.response || error);
       throw error;
     }
   },
