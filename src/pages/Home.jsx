@@ -43,8 +43,8 @@ const Home = () => {
                         ? { ...noti, read: true }
                         : noti
                 ));
+                setHasNewNotification(false); // 모든 알림을 읽음으로 표시했으므로 빨간 점 제거
             }
-            setHasNewNotification(false);
         } catch (error) {
             console.error('Failed to mark notifications as read:', error);
         }
@@ -58,6 +58,11 @@ const Home = () => {
         const response = await NotiService.getNotis();
         console.log('Noti response:', response);
         setNotifications(response.data);
+        
+        // 읽지 않은 알림이 있는지 확인
+        const hasUnread = response.data.some(noti => !noti.read);
+        setHasNewNotification(hasUnread);
+        
         setLoading(false);
     } catch (err) {
         console.error('Error loading Noti:', err);
@@ -67,42 +72,52 @@ const Home = () => {
 };
 
 useEffect(() => {
-  loadNotis();
+  const setupWebSocket = async () => {
+      try {
+          await webSocketNotificationService.connect();
 
-  // 웹소켓 연결
-  webSocketNotificationService.connect();
+          // 연결 상태 변경 이벤트 리스너 등록
+          const unsubscribeFromConnection = webSocketNotificationService.onConnectionChange((isConnected) => {
+              console.log('WebSocket connection status:', isConnected);
+              setConnected(isConnected);
+              
+              // 연결되면 바로 구독 시도
+              if (isConnected) {
+                  const success = webSocketNotificationService.subscribeToNotificationChannel();
+                  console.log('Notification subscription success:', success);
+              }
+          });
 
-  // 연결 상태 변경 이벤트 리스너 등록
-  const unsubscribeFromConnection = webSocketNotificationService.onConnectionChange(setConnected);
+          // 새로운 알림 메시지 핸들러 등록
+          const unsubscribeFromMessages = webSocketNotificationService.onMessage((newNotification) => {
+              console.log('New notification received:', newNotification);
+              
+              // 새로운 알림을 상태에 추가
+              setNotifications(prev => [{
+                  ...newNotification,
+                  read: false
+              }, ...prev]);
+              
+              // 새 알림 표시
+              setHasNewNotification(true);
+          });
 
-  // 새로운 알림 메시지 핸들러 등록
-  const unsubscribeFromMessages = webSocketNotificationService.onMessage((newNotification) => {
-    console.log('New notification received:', newNotification);
-    // 새로운 알림을 기존 알림 목록 앞에 추가
-    setNotifications(prev => [newNotification, ...prev]);
-    // 모달이 닫혀있을 때만 새 알림 표시
-    if (!isModalOpen) {
-      setHasNewNotification(true);
-    }
-  });
+          // 초기 알림 데이터 로드
+          await loadNotis();
 
-  // 채팅방 구독 시도
-  setTimeout(() => {
-      const success = webSocketNotificationService.subscribeToNotificationChannel();
-      console.log('Notis subscription success:', success);
-  }, 1000); // 약간의 지연을 두어 연결이 설정될 시간을 줌
-
-  // 컴포넌트 언마운트 시 이벤트 리스너 제거 및 구독 해제
-    return () => {
-      if (unsubscribeFromConnection) {
-        unsubscribeFromConnection();
+          // 컴포넌트 언마운트 시 정리
+          return () => {
+              unsubscribeFromConnection();
+              unsubscribeFromMessages();
+              webSocketNotificationService.disconnect();
+          };
+      } catch (error) {
+          console.error('Error setting up WebSocket:', error);
       }
-      if (unsubscribeFromMessages) {
-        unsubscribeFromMessages();
-      }
-      webSocketNotificationService.disconnect();
-    };
-}, [isModalOpen]); // isModalOpen 의존성 추가
+  };
+
+  setupWebSocket();
+}, []);
   
   useEffect(() => {
     const fetchCommitData = async () => {

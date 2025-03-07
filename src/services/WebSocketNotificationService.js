@@ -110,32 +110,31 @@ class WebSocketNotificationService {
     // 알림 채널 구독
     subscribeToNotificationChannel() {
         if (!this.webSocket || !this.isConnected) {
-          console.warn('WebSocket is not connected. Unable to subscribe to notifications.');
-          return false;
+            console.warn('WebSocket is not connected. Unable to subscribe to notifications.');
+            return false;
         }
     
         try {
-          console.log('Subscribing to notification channel...');
-          
-          // WebSocket은 별도의 구독 과정이 필요 없음
-          // 연결 자체가 구독을 의미함
-          if (this.webSocket.readyState === WebSocket.OPEN) {
-            // 구독 요청 메시지 전송
-            this.webSocket.send(JSON.stringify({
-              type: 'SUBSCRIBE',
-              channel: 'notifications'
-            }));
+            console.log('Subscribing to notification channel...');
             
-            console.log('Subscribed to notification channel');
-            return true;
-          }
+            if (this.webSocket.readyState === WebSocket.OPEN) {
+                // 구독 요청 메시지 전송
+                this.webSocket.send(JSON.stringify({
+                    type: 'SUBSCRIBE',
+                    channel: 'notifications'
+                }));
+                
+                // 연결 성공 로그
+                console.log('Successfully subscribed to notification channel');
+                return true;
+            }
     
-          return false;
+            return false;
         } catch (error) {
-          console.error('Error subscribing to notification channel:', error);
-          return false;
+            console.error('Error subscribing to notification channel:', error);
+            return false;
         }
-      }
+    }
 
   notifyConnectionStatus(isConnected) {
     this.connectionCallbacks.forEach(callback => callback(isConnected));
