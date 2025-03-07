@@ -1365,7 +1365,6 @@
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     background-color: #2563eb;
-    /* 호버 시 더 진한 파란색 */
 }
 
 /* 채팅 상단 버튼 그룹 조정 - 기존에 있지만 gap 조정 */
