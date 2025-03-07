@@ -161,7 +161,7 @@ const ChatService = {
       const formData = new FormData();
       formData.append('title', title);
       formData.append('userCountMax', parseInt(userCountMax));
-      
+
       // 파일 업로드 디버깅
       if (file) {
         console.log('Uploading file:', file);
@@ -225,19 +225,12 @@ const ChatService = {
       }
 
       const response = await apiClient.delete(`/chat/room/out/${roomId}`);
+      ChatService.clearRoomCache(roomId);
       console.log('채팅방 나가기 응답:', response);
-
-      if (response && !response.errorCode) {
-        // 참여한 방 목록 캐시만 초기화
-        cache.clearJoinedRoomsCache();
-
-        // localStorage에 플래그 설정: 참여한 방 목록만 새로고침
-        localStorage.setItem('refreshJoinedOnly', 'true');
-        localStorage.setItem('chatRoomChanged', Date.now().toString());
-      }
 
       return response;
     } catch (error) {
+      ChatService.clearRoomCache(roomId);
       console.error('Error leaving room:', error);
       throw error;
     }
@@ -252,13 +245,11 @@ const ChatService = {
       const response = await apiClient.delete(`/chat/room/delete/${roomId}`);
       console.log('채팅방 삭제 응답:', response);
 
-      if (response && !response.errorCode) {
-        // 방 삭제 시 모든 캐시 초기화
-        cache.clearCache();
-      }
+      ChatService.clearRoomCache(roomId);
 
       return response;
     } catch (error) {
+      ChatService.clearRoomCache(roomId);
       console.error('Error deleting room:', error);
       throw error;
     }
@@ -312,69 +303,6 @@ const ChatService = {
       throw error;
     }
   },
-
-  // // 채팅방 정보 가져오기 (비공개 여부 확인용)
-  // getRoomInfo: async (roomId) => {
-  //   try {
-  //     // 채팅방 목록 API를 활용하여 정보 가져오기
-  //     const response = await ChatService.getRoomList();
-
-  //     // 모든 채팅방 중에서 해당 ID의 채팅방 찾기
-  //     const room = response.data.find(r => r.id === parseInt(roomId));
-
-  //     if (!room) {
-  //       throw new Error('채팅방을 찾을 수 없습니다.');
-  //     }
-
-  //     return {
-  //       id: room.id,
-  //       title: room.title,
-  //       isPrivate: room.isPrivate || false, // 이 필드가 API 응답에 없을 수 있음
-  //       currentUserCount: room.currentUserCount,
-  //       userCountMax: room.userCountMax
-  //     };
-  //   } catch (error) {
-  //     console.error('Error getting room info:', error);
-  //     throw error;
-  //   }
-  // },
-
-  // // 채팅방 입장 (비밀번호 포함)
-  // joinRoomWithPassword: async (roomId, password) => {
-  //   try {
-  //     // URL 경로 수정 - "/api/" 제거
-  //     const response = await fetch(`/chat/room/join/${roomId}`, {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json'
-  //       },
-  //       body: JSON.stringify({
-  //         title: '',
-  //         userCountMax: 0,
-  //         password: password
-  //       })
-  //     });
-
-  //     if (!response.ok) {
-  //       const errorText = await response.text();
-  //       console.error('Server response:', errorText);
-  //       throw new Error(response.status === 500 ? '서버 내부 오류가 발생했습니다.' : '비밀번호가 올바르지 않습니다.');
-  //     }
-
-  //     const data = await response.json();
-
-  //     // 참여한 방 새로고침 플래그
-  //     localStorage.setItem('refreshJoinedOnly', 'true');
-  //     localStorage.setItem('chatRoomChanged', Date.now().toString());
-
-  //     return data;
-  //   } catch (error) {
-  //     console.error('Error joining room with password:', error);
-  //     throw error;
-  //   }
-  // }
-
-  // ChatService.js에 추가할 비밀번호 체크 기능
 
   // 채팅방 입장 (비밀번호 포함)
   joinRoomWithPassword: async (roomId, password) => {
@@ -464,6 +392,25 @@ const ChatService = {
       console.error('Error getting room info:', error);
       throw error;
     }
+  },
+
+  clearRoomCache: (roomId) => {
+    // 채팅방 메시지 캐시 삭제
+    localStorage.removeItem(`chat_messages_${roomId}`);
+
+    // 캐시 객체에서 해당 방 정보 제거
+    if (cache.rooms.all) {
+      cache.rooms.all.data = cache.rooms.all.data.filter(room => room.id !== roomId);
+    }
+    if (cache.rooms.created) {
+      cache.rooms.created.data = cache.rooms.created.data.filter(room => room.id !== roomId);
+    }
+    if (cache.rooms.joined) {
+      cache.rooms.joined.data = cache.rooms.joined.data.filter(room => room.id !== roomId);
+    }
+
+    // 캐시 변경 이벤트 발생
+    localStorage.setItem('chatRoomChanged', Date.now().toString());
   }
 };
 
