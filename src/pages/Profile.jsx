@@ -27,7 +27,7 @@ const Profile = ({ userInfo }) => {
     EGG: "알",
     HATCH: "부화",
     BABY: "아기",
-    ADULT: "성체",
+    GROWN: "성체",
   };
 
   // 경험치 바 계산
@@ -48,8 +48,8 @@ const Profile = ({ userInfo }) => {
       if (response.ok) {
         const data = await response.json();
         // 새로운 데이터로 상태 업데이트
-        setSeasonCommitCount(data.data.seasonCommitCount || 0);
-        setPetExp(data.data.petExp || 0);
+        setSeasonCommitCount(userInfo.seasonCommitCount || 0);
+        setPetExp(userInfo.petExp || 0);
         // 마지막 갱신 시간 업데이트
         setLastRefreshTime(new Date());
       }
