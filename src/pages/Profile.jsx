@@ -5,23 +5,46 @@ import Stomp from "stompjs";
 const Profile = ({ userInfo }) => {
   const [seasonCommitCount, setSeasonCommitCount] = useState(userInfo.seasonCommitCount);
   const [petExp, setPetExp] = useState(userInfo.petExp);
-  const [maxExp] = useState(100); // 최대 경험치 (필요하면 변경 가능)
+  const [username, setUsername] = useState(userInfo.username);
+  const [client, setClient] = useState(null); // WebSocket 클라이언트 상태
+  const maxExp = userInfo.petGrow === 'EGG' ? 150 : userInfo.petGrow === 'HATCH' ? 300 : 300;
+  const [commitCount, setCommitCount] = useState(0);
+  const tierEmojis = {
+    SEED: "🌱",
+    SPROUT: "🌿",
+    FLOWER: "🌺",
+    FRUIT: "🍎",
+    TREE: "🌳",
+  };
 
   // 경험치 바 계산
   const progress = (petExp / maxExp) * 100;
 
   useEffect(() => {
-    // WebSocket 설정
-    const socket = new SockJS("http://localhost:8090/ws");
-    const client = Stomp.over(socket);
+    // username이 없으면 대기 (WebSocket 연결 X)
+    if (!username) {
+      console.log("Username is not available yet, waiting...");
+      return;
+    }
 
-    client.connect({}, () => {
+    // 기존 WebSocket 연결이 있으면 끊기
+    if (client) {
+      client.disconnect(() => {
+        console.log("Previous WebSocket disconnected.");
+      });
+    }
+
+    // 새로운 WebSocket 연결
+    const socket = new SockJS("http://localhost:8090/ws");
+    const newClient = Stomp.over(socket);
+
+    newClient.connect({}, () => {
       console.log("WebSocket connected!");
 
       // 커밋 수 업데이트 메시지 수신
-      client.subscribe(`/topic/commit/${userInfo.username}`, (message) => {
+      newClient.subscribe(`/topic/commit/${userInfo.username}`, (message) => {
         const newCommitCount = JSON.parse(message.body);
-
+        setCommitCount(newCommitCount);
         // 시즌 커밋 수 업데이트
         setSeasonCommitCount((prev) => prev + newCommitCount);
 
@@ -32,14 +55,17 @@ const Profile = ({ userInfo }) => {
       console.error("WebSocket error:", error);
     });
 
+    // WebSocket 클라이언트 저장
+    setClient(newClient);
+
     return () => {
-      if (client) {
-        client.disconnect(() => {
+      if (newClient) {
+        newClient.disconnect(() => {
           console.log("WebSocket disconnected.");
         });
       }
     };
-  }, [userInfo.username]);
+  }, [username]); // username이 변경될 때마다 WebSocket 연결
 
   return (
     <div className="flex-box">
@@ -59,7 +85,8 @@ const Profile = ({ userInfo }) => {
             <img src={userInfo.avatarUrl} alt="User Avatar" className="avatar" /> {userInfo.username}
           </div>
           <div>이번 시즌 커밋 수: {seasonCommitCount}</div>
-          <div>티어: {userInfo.tier} / 마지막 커밋 날짜: {new Date(userInfo.lastCommitted).toLocaleDateString()}</div>
+          <div>업데이트 커밋 수: {commitCount}</div>
+          <div>티어: {tierEmojis[userInfo.tier] || userInfo.tier} / 마지막 커밋 날짜: {new Date(userInfo.lastCommitted).toLocaleDateString()}</div>
 
           {/* 펫 정보 */}
           <div>🐾 펫 정보</div>

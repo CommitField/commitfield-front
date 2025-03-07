@@ -22,19 +22,6 @@ const Home = () => {
   const [userLoading, setUserLoading] = useState(true);
   const [userError, setUserError] = useState(null);
 
-  const tierEmojis = {
-    SEED: "🌱",
-    SPROUT: "🌿",
-    FLOWER: "🌺",
-    FRUIT: "🍎",
-    TREE: "🌳",
-  };
-
-  // 최대 경험치 값 계산
-  const petExp = userInfo.petExp;  // 실제 경험치
-  const maxExp = userInfo.petGrow === 'EGG' ? 150 : userInfo.petGrow === 'HATCH' ? 300 : 100;
-  const progress = (petExp / maxExp) * 100;
-
 
     // 사용자 정보 불러오기
     useEffect(() => {
