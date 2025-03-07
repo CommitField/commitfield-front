@@ -1,74 +1,298 @@
-@keyframes breathe {
-  0%, 100% {
-    transform: scaleY(1); /* 원래 크기 */
-  }
-  50% {
-    transform: scaleY(0.8); /* 0.8배로 작아짐 */
-  }
-}
-
-h2 {
-    color: #222222;
-}
-
-
-.animated-pet {
-  animation: breathe 1.5s infinite ease-in-out;
-}
-
-.flex-box{
-    width:100%;
-    display: flex;
-    justify-content: center;
-}
-
+/* Enhanced Profile Styles */
 .profile-container {
+  width: 100%;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin-bottom: 32px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 15px;
-  width: 750px;
+  gap: 24px;
+  transition: all 0.3s ease;
+}
+
+.profile-container:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Pet section styling */
+.pet-section {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pet-frame {
+  width: 140px;
   height: 140px;
-  background-color: #fefefe;
-  color: #010101;
-  border: 1px solid #fff;
-  border-radius: 10px;
-  line-height: 1.4;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e1f5fe 100%);
+  border-radius: 70px;
+  padding: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
 }
 
-.pet-box {
-  width: 128px;
-  height: 128px;
-  border: 1px solid #ff8a9e;
-  background-image: url('/pets/BACK.png');
-}
-.pet-box img {
-  width: 128px;
-  height: 128px;
+.pet-frame::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%);
+  border-radius: 70px;
+  z-index: 1;
 }
 
-.info-box {
+.pet-image {
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
+  z-index: 2;
+}
+
+.pet-stage {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background-color: #ff6b6b;
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+  padding: 6px 10px;
+  border-radius: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 3;
+}
+
+/* User info section styling */
+.user-info {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.info-box img {
-  width: 32px;
-  height: 32px;
+.user-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
 }
-.avatar {
-  width: 100px;
+
+.avatar-container {
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid #f0f0f0;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.avatar-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.username {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.user-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #6b7280;
+}
+
+.detail-text {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.detail-value {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Pet info section */
+.pet-info {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.pet-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 8px;
+}
+
+.exp-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
 }
 
 .exp-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  flex: 1;
+  height: 8px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
 }
 
-.bar {
-    width: 200px;
-    display: flex;
-    align-items: center;
-    height: 30px;
+.exp-progress {
+  height: 100%;
+  background: linear-gradient(to right, #3fb27f, #4ade80);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.exp-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  min-width: 70px;
+  text-align: right;
+}
+
+/* Tier badge */
+.tier-badge {
+  display: inline-flex;
+  align-items: center;
+  background-color: #f3f4f6;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Animation for pet */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+}
+
+.animated-pet {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animated-pet.refreshing {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* 새로고침 관련 스타일 */
+.refresh-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.refresh-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.refresh-button:hover {
+  background-color: #f3f4f6;
+}
+
+.refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.refresh-icon {
+  font-size: 14px;
+  display: inline-block;
+}
+
+.refresh-icon.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+.last-refresh-time {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* 새로고침 진행 중 표시 */
+.refreshing-indicator {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: #3b82f6;
+  box-shadow: 0 0 0 2px white;
+  z-index: 10;
+  animation: pulse 1s infinite ease-in-out;
 }
