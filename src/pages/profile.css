@@ -31,15 +31,16 @@ h2 {
   height: 140px;
   background-color: #fefefe;
   color: #010101;
-  border: 1px solid #ddd;
+  border: 1px solid #fff;
   border-radius: 10px;
   line-height: 1.4;
 }
 
 .pet-box {
-  width: 130px;
-  height: 130px;
-  border: 1px solid #ff8a9e;;
+  width: 128px;
+  height: 128px;
+  border: 1px solid #ff8a9e;
+  background-image: url('/pets/BACK.png');
 }
 .pet-box img {
   width: 128px;
