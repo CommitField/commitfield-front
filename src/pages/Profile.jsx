@@ -15,8 +15,8 @@ const Profile = ({ userInfo }) => {
   
   // 티어 아이콘 매핑
   const tierEmojis = {
-    SEED: "🌱",
-    SPROUT: "🌿",
+    SEED: "🫘",
+    SPROUT: "🌱",
     FLOWER: "🌺",
     FRUIT: "🍎",
     TREE: "🌳",
@@ -153,7 +153,7 @@ const Profile = ({ userInfo }) => {
       <div className="pet-section">
         <div className="pet-frame">
           <img 
-            src={`/pets/${userInfo.petGrow}_0_128.png`} 
+            src={`/pets/${userInfo.petGrow}_${userInfo.petType}_128.png`}
             alt="Pet" 
             className={`pet-image animated-pet ${isRefreshing ? 'refreshing' : ''}`} 
           />
