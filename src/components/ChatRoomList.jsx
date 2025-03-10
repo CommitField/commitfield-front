@@ -4,7 +4,6 @@ import ChatService from '../services/ChatService';
 import ChatRoom from './ChatRoom';
 import PasswordModal from './PasswordModal';
 import './ChatStyles.css';
-import { API_BACKEND_URL } from '../config';
 import { Home } from 'lucide-react'; // Import Home icon from lucide-react
 
 const ChatRoomList = () => {
@@ -263,13 +262,16 @@ const ChatRoomList = () => {
     const isRoomsEmpty = rooms.length === 0;
 
     const getImageUrl = (imageUrl) => {
-        if (!imageUrl) return null;
-        console.log('Original imageUrl:', imageUrl); // 디버깅용
-        // API_BACKEND_URL이 이미 슬래시로 끝나지 않는지 확인
-        const baseUrl = API_BACKEND_URL.endsWith('/') ? API_BACKEND_URL.slice(0, -1) : API_BACKEND_URL;
-        const fullUrl = `${baseUrl}${imageUrl}`;
-        console.log('Full imageUrl:', fullUrl); // 디버깅용
-        return fullUrl;
+        if (!imageUrl) return '/default-room.png';
+        try {
+            // 이미 완전한 S3 URL인 경우 그대로 반환
+            if (imageUrl.includes('s3.ap-northeast-2.amazonaws.com')) {
+                return imageUrl;
+            }
+            return '/default-room.png';
+        } catch {
+            return '/default-room.png';
+        }
     };
 
     return (
@@ -345,10 +347,13 @@ const ChatRoomList = () => {
                                             src={getImageUrl(room.imageUrl)}
                                             alt={room.title}
                                             className="room-image"
+                                            loading="lazy"
                                             onError={(e) => {
-                                                console.log('Image load failed:', room.imageUrl);
-                                                e.target.onerror = null;
-                                                e.target.src = '/default-room.png';
+                                                if (!e.target.getAttribute('data-error-handled')) {
+                                                    console.error('Image load failed:', room.imageUrl);
+                                                    e.target.setAttribute('data-error-handled', 'true');
+                                                    e.target.src = '/default-room.png';
+                                                }
                                             }}
                                         />
                                     ) : (
