@@ -153,6 +153,15 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
 
         if (!newMessage.trim()) return;
 
+        // 사용자 정보가 없으면 임시 설정
+        if (!userInfo.id) {
+            console.log('메시지 전송 전 사용자 ID가 없어 임시 설정');
+            setUserInfo({
+                id: 100000,
+                nickname: 'Temporary'
+            });
+        }
+
         // 먼저 입력 필드 초기화 (UX 향상)
         const messageText = newMessage;
         setNewMessage('');
@@ -183,32 +192,14 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
                 userInfo.nickname
             );
 
-            console.log('Message sent via WebSocket, success:', wsSuccess);
-
             // 2. 웹소켓 실패 시 REST API로 시도
             if (!wsSuccess) {
                 console.log('WebSocket send failed, trying REST API');
-                try {
-                    const response = await ChatService.sendMessage(roomId, messageText);
-                    if (!response || !response.success) {
-                        console.error('API message send failed:', response);
-                        throw new Error(response?.message || '메시지 전송에 실패했습니다.');
-                    }
-                } catch (apiErr) {
-                    console.error('REST API send failed:', apiErr);
-                    // 실패 알림 표시 (기존 메시지는 유지)
-                    const failedMessages = messages.map(msg =>
-                        msg.chatMsgId === newMsg.chatMsgId
-                            ? { ...msg, failed: true, failReason: '전송 실패' }
-                            : msg
-                    );
-                    setMessages(failedMessages);
+                const response = await ChatService.sendMessage(roomId, messageText);
 
-                    // Update localStorage with failed status
-                    saveChatMessages(roomId, failedMessages);
-
-                    // 사용자에게 알림
-                    alert(apiErr.message || '메시지 전송에 실패했습니다.');
+                // 성공 응답 확인 (status 200이어도 success가 false일 수 있음)
+                if (!response || response.errorCode) {
+                    throw new Error(response?.message || '메시지 전송에 실패했습니다.');
                 }
             }
         } catch (err) {
@@ -225,7 +216,7 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
             saveChatMessages(roomId, failedMessages);
 
             // 사용자에게 알림
-            alert('메시지 전송에 실패했습니다.');
+            alert('메시지 전송에 실패했습니다: ' + (err.message || '알 수 없는 오류'));
         }
     };
 
@@ -299,31 +290,49 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
     };
 
     // 현재 로그인한 사용자 정보 가져오기
-    const getCurrentUser = () => {
-        // 이 부분은 실제 애플리케이션에서 로그인한 사용자 정보를 가져오는 방식에 따라 다를 수 있음
-        // OAuth2 사용자 정보 가져오기 (localStorage나 sessionStorage에서)
-        const userInfoStr = localStorage.getItem('userInfo');
-        if (userInfoStr) {
-            try {
-                const user = JSON.parse(userInfoStr);
-                setUserInfo({
-                    id: user.id,
-                    nickname: user.nickname || '사용자'
-                });
-            } catch (err) {
-                console.error('Error parsing user info:', err);
-                // 기본값 설정
-                setUserInfo({
-                    id: 1, // 테스트용 임시 ID
-                    nickname: '사용자'
-                });
-            }
-        } else {
-            // 사용자 정보가 없으면 기본값 설정
-            setUserInfo({
-                id: 1, // 테스트용 임시 ID
-                nickname: '사용자'
+    const getCurrentUser = async () => {
+        try {
+            console.log('사용자 정보 가져오기 시도...');
+
+            // 백엔드 코드의 UserController에 있는 엔드포인트 사용
+            const response = await fetch('/api/user/info', {
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json'
+                }
             });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('API에서 가져온 사용자 정보:', data);
+
+                // API 응답에서 필요한 정보 추출
+                setUserInfo({
+                    id: data.id || data.userId,
+                    nickname: data.nickname || data.name || data.username || '사용자'
+                });
+
+                // 웹소켓 재연결 시도
+                await webSocketService.connect();
+            } else {
+                console.error('사용자 정보를 가져오는데 실패했습니다:', response.status);
+
+                // 수동으로 ID 설정 (테스트용)
+                setUserInfo({
+                    id: 1, // 임시 ID
+                    nickname: 'BeakSungHyun'
+                });
+                console.log('임시 ID 설정됨:', 1);
+            }
+        } catch (error) {
+            console.error('사용자 정보 가져오기 실패:', error);
+
+            // 실패했을 때 수동으로 ID 설정 (개발/테스트용)
+            setUserInfo({
+                id: 1, // 임시 ID
+                nickname: 'BeakSungHyun'
+            });
+            console.log('임시 ID 설정됨 (에러 발생 후):', 1);
         }
     };
 
@@ -333,7 +342,6 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
 
         // 시스템 메시지 처리
         if (message.type === 'SYSTEM' || message.type === 'SUBSCRIBE_ACK' || message.type === 'UNSUBSCRIBE_ACK') {
-            // 시스템 메시지는 상태 표시만 하고 채팅에 추가하지 않음
             console.log('System/Control message:', message.message);
             return;
         }
@@ -341,7 +349,6 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
         // 에러 메시지 처리
         if (message.type === 'ERROR') {
             console.error('WebSocket error message:', message.message);
-            // alert(message.message || '채팅 오류가 발생했습니다.');
             return;
         }
 
@@ -352,15 +359,16 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
             return;
         }
 
-        // 메시지 형식 처리
+        // 메시지 형식 처리 - ID를 숫자형으로 명시적 변환
         const newMessage = {
             chatMsgId: message.id || message.chatMsgId || Date.now(),
-            userId: message.userId,
+            userId: message.userId ? Number(message.userId) : null,
             nickname: message.from || message.nickname || '알 수 없는 사용자',
             message: message.message || message.content || '',
             sendAt: message.sendAt || new Date().toISOString()
         };
 
+        console.log('처리된 메시지:', newMessage, '내 ID:', userInfo.id);
         // 중복 메시지 방지
         setMessages(prevMessages => {
             // 로컬 메시지 ID (local-*)로 시작하는 임시 메시지 대체
@@ -448,6 +456,25 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
         fetchRoomDetails();
     }, [roomId]);
 
+    // 컴포넌트 내부에 추가
+    useEffect(() => {
+        // 사용자 정보 로드
+        getCurrentUser();
+
+        // 5초 후에 사용자 정보가 없으면 임시 설정
+        const timer = setTimeout(() => {
+            if (!userInfo.id) {
+                console.log('사용자 정보가 여전히 없음, 임시 ID 설정');
+                setUserInfo({
+                    id: 1,
+                    nickname: 'BeakSungHyun'
+                });
+            }
+        }, 5000);
+
+        return () => clearTimeout(timer);
+    }, []); // 컴포넌트 마운트 시 한 번만 실행
+
 
     // 새 메시지 추가 시 조건부 스크롤 처리
     useEffect(() => {
@@ -502,8 +529,13 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
             prevRoomIdRef.current = roomId;
         }
 
+        // 먼저 사용자 정보 가져오기
         getCurrentUser();
-        loadMessages();
+
+        // 일정 시간 후 메시지 로드 (사용자 정보가 설정될 시간 확보)
+        const timer = setTimeout(() => {
+            loadMessages();
+        }, 500);
 
         // 웹소켓 연결 및 채팅방 구독
         // 연결 상태 변경 이벤트 리스너 등록
@@ -545,6 +577,7 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
 
         // 컴포넌트 언마운트 시 이벤트 리스너 제거 및 구독 해제
         return () => {
+            clearTimeout(timer); // 추가된 타이머 정리
             if (unsubscribeFromMessages) {
                 unsubscribeFromMessages();
             }
@@ -606,6 +639,28 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
     const sortedDates = Object.keys(groupedMessages).sort((a, b) => {
         return new Date(a) - new Date(b);
     });
+
+    // 메시지 주인 확인 - 발신자 ID와 메시지 nickname 모두 확인
+    const isOwnMessage = (msg) => {
+        if (!msg || !userInfo.id) return false;
+
+        // userId가 있으면 숫자로 변환하여 비교 (타입 일치 보장)
+        if (msg.userId !== undefined) {
+            return Number(msg.userId) === Number(userInfo.id);
+        }
+
+        // 백업 방법으로 닉네임 비교
+        if (msg.nickname && userInfo.nickname) {
+            return msg.nickname === userInfo.nickname;
+        }
+
+        // from 필드가 있는 경우 (웹소켓 메시지)
+        if (msg.from && userInfo.nickname) {
+            return msg.from === userInfo.nickname;
+        }
+
+        return false;
+    };
 
     return (
         <div className="chat-window">
@@ -672,24 +727,43 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
                                     <div className="date-divider">
                                         <span>{date}</span>
                                     </div>
-                                    {groupedMessages[date].map((msg) => (
-                                        <div
-                                            key={msg.chatMsgId || `${msg.userId}-${Date.now()}-${Math.random()}`}
-                                            className={`message ${msg.userId === userInfo.id ? 'sent' : 'received'} ${msg.failed ? 'failed' : ''}`}
-                                        >
-                                            <div className="avatar">
-                                                {/* 실제 사용자 아바타가 있으면 추가 */}
-                                            </div>
-                                            <div className="content">
-                                                <div className="sender">{msg.nickname}</div>
-                                                <div className="bubble">{msg.message}</div>
-                                                <div className="time">
-                                                    {msg.sendAt ? formatTime(msg.sendAt) : ''}
-                                                    {msg.failed && <span className="error-badge" title={msg.failReason}>!</span>}
+                                    {groupedMessages[date].map((msg) => {
+                                        // 메시지 객체를 통째로 isOwnMessage에 전달
+                                        // isOwnMessage 함수를 통해 메시지 소유자 확인
+                                        const isOwn = isOwnMessage(msg);
+
+                                        // 디버깅용 로그 추가
+                                        console.log('메시지 렌더링:',
+                                            msg.message,
+                                            'isOwn:', isOwn,
+                                            'msg.userId:', msg.userId,
+                                            'userInfo.id:', userInfo.id,
+                                            'comparison:', Number(msg.userId) === Number(userInfo.id)
+                                        );
+
+                                        return (
+                                            <div
+                                                key={msg.chatMsgId || `${msg.userId}-${Date.now()}-${Math.random()}`}
+                                                className={`message ${isOwn ? 'sent' : 'received'} ${msg.failed ? 'failed' : ''}`}
+                                            >
+                                                <div className="avatar">
+                                                    {/* 다른 사용자의 메시지인 경우 아바타 표시 */}
+                                                    {!isOwn && (
+                                                        <div className="avatar-text">{msg.nickname ? msg.nickname.charAt(0).toUpperCase() : '?'}</div>
+                                                    )}
+                                                </div>
+                                                <div className="content">
+                                                    {/* 다른 사용자의 메시지인 경우 이름 표시 */}
+                                                    {!isOwn && <div className="sender">{msg.nickname || msg.from || '알 수 없는 사용자'}</div>}
+                                                    <div className="bubble">{msg.message}</div>
+                                                    <div className="time">
+                                                        {msg.sendAt ? formatTime(msg.sendAt) : ''}
+                                                        {msg.failed && <span className="error-badge" title={msg.failReason}>!</span>}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             ))}
                             <div ref={messagesEndRef} />

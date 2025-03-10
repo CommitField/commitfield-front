@@ -555,7 +555,8 @@
     flex: 1;
     padding: 20px;
     overflow-y: auto;
-    /* max-height 속성 제거 또는 수정 */
+    display: flex;
+    flex-direction: column;
 }
 
 /* 날짜 구분선 */
@@ -1082,4 +1083,57 @@
         right: 10px;
         flex-wrap: wrap;
     }
+}
+
+/* 아바타 스타일 */
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #ddd;
+    overflow: hidden;
+    margin: 0 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-text {
+    font-weight: bold;
+    font-size: 18px;
+    color: #555;
+}
+
+/* 내가 보낸 메시지는 아바타 표시 안 함 */
+.message.sent .avatar {
+    display: none;
+}
+
+/* 보낸 사람 이름 */
+.sender {
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    color: #333;
+    font-weight: 600;
+}
+
+/* 내가 보낸 메시지는 이름 표시 안 함 */
+.message.sent .sender {
+    display: none;
+}
+
+/* 메시지 그룹화를 위한 스타일 */
+.message-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 8px;
+}
+
+.message-group.received {
+    align-items: flex-start;
+}
+
+.message-group.sent {
+    align-items: flex-end;
 }

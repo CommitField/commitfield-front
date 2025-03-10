@@ -1,4 +1,4 @@
-// src/services/WebSocketService.js - Fixed WebSocket implementation
+// src/services/WebSocketService.js - Updated to match backend implementation
 import { API_BACKEND_URL } from '../config';
 
 class WebSocketService {
@@ -47,12 +47,17 @@ class WebSocketService {
         // WebSocket 연결 생성
         const baseUrl = API_BACKEND_URL || 'http://localhost:8090';
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsBaseUrl = baseUrl.replace(/^https?:/, wsProtocol);
 
-        console.log(`Connecting to WebSocket at ${wsBaseUrl}/chat-rooms`);
+        // Extract hostname and port from baseUrl
+        let wsBaseUrl = baseUrl.replace(/^https?:\/\//, '');
+        // Remove any path from the URL if present
+        wsBaseUrl = wsBaseUrl.split('/')[0];
 
-        // WebSocket 객체 생성
-        this.webSocket = new WebSocket(`${wsBaseUrl}/chat-rooms`);
+        const wsUrl = `${wsProtocol}//${wsBaseUrl}/chat-rooms`;
+        console.log(`Connecting to WebSocket at ${wsUrl}`);
+
+        // WebSocket 객체 생성 with credentials
+        this.webSocket = new WebSocket(wsUrl);
 
         // 연결 성공 이벤트 핸들러
         this.webSocket.onopen = (event) => {
@@ -340,13 +345,13 @@ class WebSocketService {
         }
       }
 
+      // Format must match exactly what backend expects
       const chatMessage = {
         type: 'CHAT',
         roomId: roomIdNum,
         userId: userId,
-        from: nickname || '사용자',
         message: message,
-        sendAt: new Date().toISOString()
+        from: nickname || '사용자'
       };
 
       console.log('Sending message:', chatMessage);
