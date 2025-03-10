@@ -10,6 +10,8 @@ import './profile.css';
 import '../modals/NotificationModal.css';
 import axios from "axios";
 import NotiService from '../services/NotiService';
+import SockJS from "sockjs-client";
+import Stomp from "stompjs";
 import webSocketNotificationService from '../services/WebSocketNotificationService';
 
 const Home = () => {
@@ -34,6 +36,7 @@ const Home = () => {
   });
   const [connected, setConnected] = useState(false);  // 웹소켓 연결 상태
   const navigate = useNavigate();
+  const [client, setClient] = useState(null); // WebSocket 클라이언트 상태
 
 
     // 사용자 정보 불러오기
@@ -54,7 +57,8 @@ const Home = () => {
   }, []);
 
   const toggleModal = async () => {
-    setIsModalOpen(!isModalOpen);
+    // 읽은 알림들을 필터링하여 제거
+    setNotifications(prev => prev.filter(noti => !noti.read));
     if (!isModalOpen) {  // 모달이 열릴 때 (false -> true)
         try {
             // 읽지 않은 알림만 필터링
@@ -69,12 +73,14 @@ const Home = () => {
                         ? { ...noti, read: true }
                         : noti
                 ));
+                
                 setHasNewNotification(false); // 모든 알림을 읽음으로 표시했으므로 빨간 점 제거
             }
         } catch (error) {
             console.error('Failed to mark notifications as read:', error);
         }
     }
+    setIsModalOpen(!isModalOpen);
 };
 
   // 메시지 목록을 로드하는 함수
@@ -98,53 +104,73 @@ const Home = () => {
 };
 
 useEffect(() => {
-  const setupWebSocket = async () => {
-      try {
-          await webSocketNotificationService.connect();
+    // userInfo.username이 없으면 WebSocket 연결 안 함
+    if (!userInfo.username) {
+      console.log("Username is not available yet, waiting...");
+      return;
+    }
 
-          // 연결 상태 변경 이벤트 리스너 등록
-          const unsubscribeFromConnection = webSocketNotificationService.onConnectionChange((isConnected) => {
-              console.log('WebSocket connection status:', isConnected);
-              setConnected(isConnected);
-              
-              // 연결되면 바로 구독 시도
-              if (isConnected) {
-                  const success = webSocketNotificationService.subscribeToNotificationChannel();
-                  console.log('Notification subscription success:', success);
-              }
+    // 초기 알림 데이터 로드
+    loadNotis();
+
+    // 기존 WebSocket 연결이 있으면 끊기
+    if (client) {
+      client.disconnect(() => {
+        console.log("Previous WebSocket disconnected.");
+      });
+    }
+
+    // 새로운 WebSocket 연결
+    const socket = new SockJS(`${API_BACKEND_URL}/ws`);
+    const newClient = Stomp.over(socket);
+
+    newClient.connect({}, () => {
+      console.log("WebSocket connected!");
+
+      // 커밋 수 업데이트 메시지 수신
+      newClient.subscribe(`/topic/notifications/${userInfo.username}`, (message) => {
+        const notifications = JSON.parse(message.body);
+
+        // 배열인 경우 처리
+        if (Array.isArray(notifications)) {
+          // 각 알림을 상태에 추가
+          notifications.forEach(notification => {
+            setNotifications(prev => [{
+              id: notification.id,
+              message: notification.message,
+              createdAt: notification.formattedCreatedAt,
+              read: false
+            }, ...prev]);
           });
+        } else {
+          // 단일 알림인 경우
+          setNotifications(prev => [{
+            id: notifications.id,
+            message: notifications.message,
+            createdAt: notifications.formattedCreatedAt,
+            read: false
+          }, ...prev]);
+        }
+        
+        // 새 알림 표시
+        setHasNewNotification(true);
+      });
+    }, (error) => {
+      console.error("WebSocket error:", error);
+    });
 
-          // 새로운 알림 메시지 핸들러 등록
-          const unsubscribeFromMessages = webSocketNotificationService.onMessage((newNotification) => {
-              console.log('New notification received:', newNotification);
-              
-              // 새로운 알림을 상태에 추가
-              setNotifications(prev => [{
-                  ...newNotification,
-                  read: false
-              }, ...prev]);
-              
-              // 새 알림 표시
-              setHasNewNotification(true);
-          });
+    // WebSocket 클라이언트 저장
+    setClient(newClient);
 
-          // 초기 알림 데이터 로드
-          await loadNotis();
-
-          // 컴포넌트 언마운트 시 정리
-          return () => {
-              unsubscribeFromConnection();
-              unsubscribeFromMessages();
-              webSocketNotificationService.disconnect();
-          };
-      } catch (error) {
-          console.error('Error setting up WebSocket:', error);
+    return () => {
+      if (newClient) {
+        newClient.disconnect(() => {
+          console.log("WebSocket disconnected.");
+        });
       }
-  };
+    };
+  }, [userInfo.username]); // username이 변경될 때마다 WebSocket 연결
 
-  setupWebSocket();
-}, []);
-  
   useEffect(() => {
     const fetchCommitData = async () => {
       try {
