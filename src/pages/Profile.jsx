@@ -12,7 +12,7 @@ const Profile = ({ userInfo }) => {
   const refreshTimerRef = useRef(null);
 
   const maxExp = userInfo.petGrow === "EGG" ? 150 : userInfo.petGrow === "HATCH" ? 300 : 300;
-  
+
   // 티어 아이콘 매핑
   const tierEmojis = {
     SEED: "🫘",
@@ -38,13 +38,13 @@ const Profile = ({ userInfo }) => {
     setIsRefreshing(true);
     try {
       // 실제로는 여기서 API 호출을 통해 최신 데이터를 가져옵니다
-      const response = await fetch("/api/user/info", { 
+      const response = await fetch("/api/user/info", {
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache'
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         // 새로운 데이터로 상태 업데이트
@@ -63,7 +63,7 @@ const Profile = ({ userInfo }) => {
   // 자동 새로고침 설정 (30초마다)
   useEffect(() => {
     refreshTimerRef.current = setInterval(refreshProfileData, 30000);
-    
+
     // 컴포넌트 언마운트 시 타이머 정리
     return () => {
       if (refreshTimerRef.current) {
@@ -73,23 +73,22 @@ const Profile = ({ userInfo }) => {
   }, []);
 
   // userInfo가 변경되면 값 업데이트
-  useEffect(() => {
-    setSeasonCommitCount(userInfo.seasonCommitCount || 0);
-    setPetExp(userInfo.petExp || 0);
-    setLastRefreshTime(new Date());
-  }, [userInfo]);
+useEffect(() => {
+  setSeasonCommitCount((prev) => prev || userInfo.seasonCommitCount);
+  setPetExp((prev) => prev || userInfo.petExp);
+}, [userInfo]);
 
   // 날짜 포맷팅 함수
   const formatDate = (dateString) => {
     if (!dateString) return "없음";
     const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
-  
+
   // 새로고침 시간 포맷팅 함수
   const formatRefreshTime = (date) => {
     return date.toLocaleTimeString('ko-KR', {
@@ -152,10 +151,10 @@ const Profile = ({ userInfo }) => {
       {/* 왼쪽: 펫 이미지 */}
       <div className="pet-section">
         <div className="pet-frame">
-          <img 
+          <img
             src={`/pets/${userInfo.petGrow}_${userInfo.petType}_128.png`}
-            alt="Pet" 
-            className={`pet-image animated-pet ${isRefreshing ? 'refreshing' : ''}`} 
+            alt="Pet"
+            className={`pet-image animated-pet ${isRefreshing ? 'refreshing' : ''}`}
           />
         </div>
         <div className="pet-stage">
@@ -171,7 +170,7 @@ const Profile = ({ userInfo }) => {
           <div className="avatar-container">
             <img src={userInfo.avatarUrl} alt="User Avatar" />
           </div>
-          <span className="username">{userInfo.username || "사용자"}</span>
+          z<span className="username">{userInfo.username || "사용자"}</span>
         </div>
 
         {/* 유저 세부 정보 */}
@@ -182,14 +181,14 @@ const Profile = ({ userInfo }) => {
               이번 시즌 커밋: <span className="detail-value">{seasonCommitCount}</span>
             </span>
           </div>
-          
+
           <div className="detail-item">
             <span className="detail-icon">🔄</span>
             <span className="detail-text">
               업데이트 커밋: <span className="detail-value">{commitCount}</span>
             </span>
           </div>
-          
+
           <div className="detail-item">
             <span className="detail-icon">🏆</span>
             <span className="detail-text">
@@ -198,7 +197,7 @@ const Profile = ({ userInfo }) => {
               </span>
             </span>
           </div>
-          
+
           <div className="detail-item">
             <span className="detail-icon">📅</span>
             <span className="detail-text">
@@ -212,11 +211,11 @@ const Profile = ({ userInfo }) => {
           <div className="pet-title">
             <span>🐾</span> 펫 정보
           </div>
-          
+
           <div className="exp-bar-container">
             <div className="exp-bar">
-              <div 
-                className="exp-progress" 
+              <div
+                className="exp-progress"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
@@ -224,11 +223,11 @@ const Profile = ({ userInfo }) => {
               {petExp} / {maxExp}
             </span>
           </div>
-          
+
           {/* 새로고침 버튼 및 마지막 새로고침 시간 표시 */}
           <div className="refresh-info">
-            <button 
-              className="refresh-button" 
+            <button
+              className="refresh-button"
               onClick={refreshProfileData}
               disabled={isRefreshing}
             >
