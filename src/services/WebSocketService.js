@@ -342,6 +342,7 @@ class WebSocketService {
         userId: parseInt(userData.id), // userId를 숫자로 변환
         nickname: userData.username,
         from: userData.username,
+        avatarUrl: userData.avatarUrl, // 사용자 아바타 URL 추가
         message: message,
         sendAt: new Date().toISOString(),
         isLocalMessage: true // 로컬에서 보낸 메시지 표시
