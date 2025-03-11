@@ -2,6 +2,7 @@
 import { BrowserRouter as Router, Route, Routes, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Home from "./pages/Home";
+import Pets from "./pages/Pets";
 import ErrorPage from "./error/ErrorPage";
 import TestAPI from "./pages/TestAPI";
 import GithubLogin from "./components/GithubLogin";
@@ -23,6 +24,7 @@ function App() {
             <Routes>
                 <Route path="/" element={<GithubLogin />} />
                 <Route path="/home" element={<Home />} />
+                <Route path="/pets" element={<Pets />} />
                 <Route path="/error" element={<ErrorPage />} />
                 <Route path="/testapi" element={<TestAPI />} />
                 <Route path="/protected" element={
