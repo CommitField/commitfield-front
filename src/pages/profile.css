@@ -304,3 +304,51 @@ h2 {
   z-index: 10;
   animation: pulse 1s infinite ease-in-out;
 }
+
+/* 버튼 섹션 스타일 */
+.button-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 10px;
+}
+
+/* 버튼 기본 스타일 */
+.button-section button {
+  width: 140px;
+  height: 40px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+/* 새 펫 받기 버튼 */
+.get-new-pet-btn {
+  background-color: #fefefe;
+  border: 1px solid rgb(63, 178, 127);
+  color: black;
+}
+
+.get-new-pet-btn:hover {
+  background-color: rgb(63, 178, 127);
+  border: 1px solid #fefefe;
+  transform: scale(1.05);
+}
+
+/* 펫 보러가기 버튼 */
+.view-pets-btn {
+  background-color: rgb(63, 178, 127);
+  border: 1px solid #fefefe;
+  color: white;
+}
+
+.view-pets-btn:hover {
+  background-color: #fefefe;
+  border: 1px solid rgb(63, 178, 127);
+  color: rgb(63, 178, 127);
+  transform: scale(1.05);
+}

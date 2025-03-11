@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
+import { useNavigate } from "react-router-dom";
 
 const Profile = ({ userInfo }) => {
   const [seasonCommitCount, setSeasonCommitCount] = useState(userInfo.seasonCommitCount || 0);
@@ -34,6 +35,12 @@ const Profile = ({ userInfo }) => {
 
   // 경험치 바 계산
   const progress = (petExp / maxExp) * 100;
+  const navigate = useNavigate(); // 페이지 이동 함수
+
+  // 새 펫 받기 버튼 클릭 핸들러
+  const handleGetNewPet = () => {
+    alert("새 펫을 받는 기능은 아직 구현되지 않았습니다! 🐣");
+  };
 
   // 프로필 정보 자동 새로고침 함수
   const refreshProfileData = async () => {
@@ -75,10 +82,10 @@ const Profile = ({ userInfo }) => {
   }, []);
 
   // userInfo가 변경되면 값 업데이트
-useEffect(() => {
-  setSeasonCommitCount((prev) => prev || userInfo.seasonCommitCount);
-  setPetExp((prev) => prev || userInfo.petExp);
-}, [userInfo]);
+  useEffect(() => {
+    setSeasonCommitCount((prev) => prev || userInfo.seasonCommitCount);
+    setPetExp((prev) => prev || userInfo.petExp);
+  }, [userInfo]);
 
   // 날짜 포맷팅 함수
   const formatDate = (dateString) => {
@@ -203,7 +210,7 @@ useEffect(() => {
           <div className="detail-item">
             <span className="detail-icon">📅</span>
             <span className="detail-text">
-              마지막 커밋: <span className="detail-value">{formatDate(userInfo.lastCommitted)}</span>
+              마지막 업데이트: <span className="detail-value">{formatDate(userInfo.lastCommitted)}</span>
             </span>
           </div>
         </div>
@@ -241,6 +248,15 @@ useEffect(() => {
           </div>
         </div>
       </div>
+      {/* 🆕 추가된 버튼 섹션 */}
+              <div className="button-section">
+                <button className="get-new-pet-btn" onClick={handleGetNewPet}>
+                  🐣 새 펫 받기
+                </button>
+                <button className="view-pets-btn" onClick={() => navigate("/pets")}>
+                  🏡 펫 보러가기
+                </button>
+              </div>
     </div>
   );
 };
