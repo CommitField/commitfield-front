@@ -170,7 +170,7 @@ useEffect(() => {
           <div className="avatar-container">
             <img src={userInfo.avatarUrl} alt="User Avatar" />
           </div>
-          z<span className="username">{userInfo.username || "사용자"}</span>
+          <span className="username">{userInfo.nickname || "사용자"}({userInfo.username || "사용자"})</span>
         </div>
 
         {/* 유저 세부 정보 */}
