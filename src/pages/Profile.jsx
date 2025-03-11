@@ -249,14 +249,18 @@ const Profile = ({ userInfo }) => {
         </div>
       </div>
       {/* 🆕 추가된 버튼 섹션 */}
-              <div className="button-section">
-                <button className="get-new-pet-btn" onClick={handleGetNewPet}>
-                  🐣 새 펫 받기
-                </button>
-                <button className="view-pets-btn" onClick={() => navigate("/pets")}>
-                  🏡 펫 보러가기
-                </button>
-              </div>
+      <div className="button-section">
+        <button
+          className="get-new-pet-btn"
+          onClick={handleGetNewPet}
+          disabled={userInfo.petGrow !== "GROWN"}  // GROWN이 아닐 때 비활성화
+        >
+          🐣 새 펫 받기
+        </button>
+        <button className="view-pets-btn" onClick={() => navigate("/pets")}>
+          🏡 펫 보러가기
+        </button>
+      </div>
     </div>
   );
 };
