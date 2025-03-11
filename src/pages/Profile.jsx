@@ -11,15 +11,17 @@ const Profile = ({ userInfo }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const refreshTimerRef = useRef(null);
 
-  const maxExp = userInfo.petGrow === "EGG" ? 150 : userInfo.petGrow === "HATCH" ? 300 : 300;
+  //FIXME: 테스트를 위해 수치 줄임. 차후 150/300으로 변경 필요.
+  const maxExp = userInfo.petGrow === "EGG" ? 20 : userInfo.petGrow === "HATCH" ? 40 : 40;
 
   // 티어 아이콘 매핑
   const tierEmojis = {
-    SEED: "🫘",
-    SPROUT: "🌱",
-    FLOWER: "🌺",
-    FRUIT: "🍎",
-    TREE: "🌳",
+    NONE: "❌미획득",
+    SEED: "🫘씨앗",
+    SPROUT: "🌱새싹",
+    FLOWER: "🌺꽃",
+    FRUIT: "🍎열매",
+    TREE: "🌳나무",
   };
 
   // 펫 성장 단계 한글화
@@ -170,7 +172,7 @@ useEffect(() => {
           <div className="avatar-container">
             <img src={userInfo.avatarUrl} alt="User Avatar" />
           </div>
-          <span className="username">{userInfo.nickname || "사용자"}({userInfo.username || "사용자"})</span>
+          <span className="username">{userInfo.nickname || userInfo.username}({userInfo.username || "사용자"})</span>
         </div>
 
         {/* 유저 세부 정보 */}
@@ -193,7 +195,7 @@ useEffect(() => {
             <span className="detail-icon">🏆</span>
             <span className="detail-text">
               티어: <span className="tier-badge">
-                {tierEmojis[userInfo.tier] || ""} {userInfo.tier || "없음"}
+                {tierEmojis[userInfo.tier] || ""}
               </span>
             </span>
           </div>

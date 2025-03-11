@@ -23,6 +23,7 @@ const Home = () => {
   const [userInfo, setUserInfo] = useState({});
   const [userLoading, setUserLoading] = useState(true);
   const [userError, setUserError] = useState(null);
+  const [prevTier, setPrevTier] = useState(null);
   
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -38,6 +39,15 @@ const Home = () => {
   const navigate = useNavigate();
   const [client, setClient] = useState(null); // WebSocket 클라이언트 상태
 
+  // 티어 아이콘 매핑
+  const tierEmojis = {
+    NONE: "❌미획득",
+    SEED: "🫘씨앗",
+    SPROUT: "🌱새싹",
+    FLOWER: "🌺꽃",
+    FRUIT: "🍎열매",
+    TREE: "🌳나무",
+  };
 
     // 사용자 정보 불러오기
     useEffect(() => {
@@ -55,6 +65,33 @@ const Home = () => {
 
     fetchUserInfo();
   }, []);
+
+// 업적 기록을 가져오기
+const fetchTierInfo = async () => {
+  try {
+    const response = await fetch("/api/user/tierinfo");
+    const data = await response.json();
+
+    // "2025년 겨울 시즌" 데이터 필터링
+    const winterTier = data.find(item => item.year === "2025" && item.season === "winter");
+
+    if (winterTier) {
+      console.log("겨울 시즌 티어:", winterTier.tier);
+      setPrevTier(winterTier.tier);  // 상태로 저장하여 UI에 반영
+    } else {
+      console.log("겨울 시즌 데이터 없음");
+      setPrevTier("미획득");
+    }
+  } catch (error) {
+    console.error("Tier 정보를 가져오는 중 오류 발생:", error);
+  }
+};
+
+// useEffect를 사용하여 API 호출
+useEffect(() => {
+  fetchTierInfo();
+}, []);
+
 
   const toggleModal = async () => {
     // 읽은 알림들을 필터링하여 제거
@@ -496,10 +533,14 @@ useEffect(() => {
                       {seasonData[season].restrictedContributionsCount}
                     </td>
                     <td className="table-cell table-cell-center">
-
-                      <span className={`streak-badge`}>
-                        미획득
-                      </span>
+                      {season === "winter" ? (
+                        <span className="streak-badge">
+                          {tierEmojis[prevTier] || tierEmojis['NONE']}
+                        </span>
+                      ) : (
+                        <span className="streak-badge">
+                          {tierEmojis['NONE']}</span>
+                      )}
                     </td>
                     <td className="table-cell table-cell-center">
                       <span className={`streak-badge ${seasonData[season].maxStreakDays > 0 ? 'max-streak-badge' : 'zero-value'}`}>
