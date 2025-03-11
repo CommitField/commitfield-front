@@ -366,8 +366,6 @@ useEffect(() => {
          <Profile userInfo={userInfo} />
       </div>
 
-
-
         <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', paddingLeft: '16px' }}>내 커밋 기록</h2>
 
         {/* 커밋 통계 - 테이블과 너비 동일하게 */}
@@ -420,7 +418,7 @@ useEffect(() => {
           <table className="season-table">
             <thead>
               <tr>
-                <th className="table-header">시즌</th>
+                <th className="table-header">현재 시즌 (봄)</th>
                 <th className="table-header table-header-center">총 커밋</th>
                 <th className="table-header table-header-center">공개 커밋</th>
                 <th className="table-header table-header-center">비공개 커밋</th>
@@ -429,19 +427,56 @@ useEffect(() => {
               </tr>
             </thead>
             <tbody>
-              {Object.entries(seasonData).map(([season, data], index) => {
-                if (!data) return null;
+              {seasonData.spring && (
+                <tr className="row-spring">
+                  <td className="table-cell">
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {getSeasonIcon("spring")}
+                      <span style={{ marginLeft: '8px', color: '#333' }}>봄 시즌</span>
+                    </div>
+                  </td>
+                  <td className="table-cell table-cell-center" style={{ fontWeight: 'bold', color: '#333' }}>
+                    {seasonData.spring.totalCommitContributions + seasonData.spring.restrictedContributionsCount}
+                  </td>
+                  <td className="table-cell table-cell-center" style={{ color: '#333' }}>
+                    {seasonData.spring.totalCommitContributions}
+                  </td>
+                  <td className="table-cell table-cell-center" style={{ color: '#333' }}>
+                    {seasonData.spring.restrictedContributionsCount}
+                  </td>
+                  <td className="table-cell table-cell-center">
+                    <span className={`streak-badge ${seasonData.spring.currentStreakDays > 0 ? 'current-streak-badge' : 'zero-value'}`}>
+                      {seasonData.spring.currentStreakDays}일
+                    </span>
+                  </td>
+                  <td className="table-cell table-cell-center">
+                    <span className={`streak-badge ${seasonData.spring.maxStreakDays > 0 ? 'max-streak-badge' : 'zero-value'}`}>
+                      {seasonData.spring.maxStreakDays}일
+                    </span>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
 
-                const totalSeasonContributions = data.totalCommitContributions + data.restrictedContributionsCount;
-                let rowClass = '';
+            {/* 지난 시즌 테이블 */}
+          <table className="season-table">
+            <thead>
+              <tr>
+                <th className="table-header">지난 시즌</th>
+                <th className="table-header table-header-center">총 커밋</th>
+                <th className="table-header table-header-center">공개 커밋</th>
+                <th className="table-header table-header-center">비공개 커밋</th>
+                <th className="table-header table-header-center">획득 티어</th>
+                <th className="table-header table-header-center">최장 연속</th>
+              </tr>
+            </thead>
+            <tbody>
+              {["summer", "fall", "winter"].map((season) => {
+                if (!seasonData[season]) return null;
 
-                switch (season) {
-                  case 'spring': rowClass = 'row-spring'; break;
-                  case 'summer': rowClass = 'row-summer'; break;
-                  case 'fall': rowClass = 'row-fall'; break;
-                  case 'winter': rowClass = 'row-winter'; break;
-                  default: rowClass = '';
-                }
+                const totalSeasonContributions = seasonData[season].totalCommitContributions + seasonData[season].restrictedContributionsCount;
+                let rowClass = `row-${season}`;
 
                 return (
                   <tr key={season} className={rowClass}>
@@ -455,19 +490,20 @@ useEffect(() => {
                       {totalSeasonContributions}
                     </td>
                     <td className="table-cell table-cell-center" style={{ color: '#333' }}>
-                      {data.totalCommitContributions}
+                      {seasonData[season].totalCommitContributions}
                     </td>
                     <td className="table-cell table-cell-center" style={{ color: '#333' }}>
-                      {data.restrictedContributionsCount}
+                      {seasonData[season].restrictedContributionsCount}
                     </td>
                     <td className="table-cell table-cell-center">
-                      <span className={`streak-badge ${data.currentStreakDays > 0 ? 'current-streak-badge' : 'zero-value'}`}>
-                        {data.currentStreakDays}일
+
+                      <span className={`streak-badge`}>
+                        미획득
                       </span>
                     </td>
                     <td className="table-cell table-cell-center">
-                      <span className={`streak-badge ${data.maxStreakDays > 0 ? 'max-streak-badge' : 'zero-value'}`}>
-                        {data.maxStreakDays}일
+                      <span className={`streak-badge ${seasonData[season].maxStreakDays > 0 ? 'max-streak-badge' : 'zero-value'}`}>
+                        {seasonData[season].maxStreakDays}일
                       </span>
                     </td>
                   </tr>
@@ -475,6 +511,7 @@ useEffect(() => {
               })}
             </tbody>
           </table>
+
         </div>
       </div>
     </div>
