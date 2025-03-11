@@ -176,6 +176,7 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
                 userId: userData.id,
                 username: userData.username,
                 nickname: userData.nickname || userData.username,
+                avatarUrl: userData.avatarUrl, // 프로필 이미지 URL 추가
                 message: messageText,
                 sendAt: new Date().toISOString()
             };
@@ -347,6 +348,7 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
                 chatMsgId: message.id || Date.now(),
                 userId: parseInt(message.userId),
                 nickname: message.nickname || message.from || '알 수 없는 사용자',
+                avatarUrl: message.avatarUrl, // avatarUrl 추가
                 message: message.message,
                 sendAt: message.sendAt || new Date().toISOString()
             };
@@ -637,7 +639,15 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
                                             className={`message ${msg.userId === userInfo.id ? 'sent' : 'received'} ${msg.failed ? 'failed' : ''}`}
                                         >
                                             <div className="avatar">
-                                                {/* 실제 사용자 아바타가 있으면 추가 */}
+                                                {msg.avatarUrl ? (
+                                                    <img 
+                                                        src={msg.avatarUrl} 
+                                                        alt={msg.nickname} 
+                                                        className="user-avatar"
+                                                    />
+                                                ) : (
+                                                    <i className="fas fa-user"></i>
+                                                )}
                                             </div>
                                             <div className="content">
                                                 <div className="sender">{msg.nickname}</div>
