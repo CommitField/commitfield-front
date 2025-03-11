@@ -48,8 +48,8 @@ const Profile = ({ userInfo }) => {
       if (response.ok) {
         const data = await response.json();
         // 새로운 데이터로 상태 업데이트
-        setSeasonCommitCount(userInfo.seasonCommitCount || 0);
-        setPetExp(userInfo.petExp || 0);
+        setSeasonCommitCount(data.seasonCommitCount || 0);
+        setPetExp(data.petExp || 0);
         // 마지막 갱신 시간 업데이트
         setLastRefreshTime(new Date());
       }
