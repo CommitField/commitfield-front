@@ -166,14 +166,15 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
             });
             const userData = await userResponse.json();
 
-            if (!userData || !userData.username) {
+            if (!userData || !userData.id) {
                 throw new Error('사용자 정보를 가져올 수 없습니다.');
             }
 
             // 새 메시지 객체 생성
             const newMsg = {
                 chatMsgId: `local-${Date.now()}`,
-                userId: userData.username,
+                userId: userData.id,
+                username: userData.username,
                 nickname: userData.nickname || userData.username,
                 message: messageText,
                 sendAt: new Date().toISOString()
@@ -186,6 +187,7 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
             const wsSuccess = await webSocketService.sendMessage(
                 roomIdInt,
                 messageText,
+                userData.id,
                 userData.username,
                 userData.nickname || userData.username
             );
@@ -289,12 +291,12 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
             });
             const userData = await response.json();
 
-            if (!userData || !userData.username) {
+            if (!userData || !userData.id) {
                 throw new Error('사용자 정보를 가져올 수 없습니다.');
             }
 
             setUserInfo({
-                id: userData.username,
+                id: userData.id,
                 nickname: userData.nickname || userData.username
             });
         } catch (err) {
@@ -304,73 +306,53 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
         }
     };
 
-    // 웹소켓 메시지 핸들러 - 일반 웹소켓용
+    // 웹소켓 메시지 핸들러 수정
     const handleWebSocketMessage = (message) => {
         console.log('WebSocket message received:', message);
 
-        // 시스템 메시지 처리
         if (message.type === 'SYSTEM' || message.type === 'SUBSCRIBE_ACK' || message.type === 'UNSUBSCRIBE_ACK') {
-            // 시스템 메시지는 상태 표시만 하고 채팅에 추가하지 않음
-            console.log('System/Control message:', message.message);
             return;
         }
 
-        // 에러 메시지 처리
         if (message.type === 'ERROR') {
-            console.error('WebSocket error message:', message.message);
-            // alert(message.message || '채팅 오류가 발생했습니다.');
             return;
         }
 
-        // 채팅방 ID 확인
-        const messageRoomId = message.roomId ? parseInt(message.roomId) : null;
-        if (messageRoomId && messageRoomId !== roomIdInt) {
-            console.log('Message for different room ignored:', messageRoomId);
+        const messageRoomId = parseInt(message.roomId);
+        if (messageRoomId !== roomIdInt) {
             return;
         }
 
-        // 메시지 형식 처리
-        const newMessage = {
-            chatMsgId: message.id || message.chatMsgId || Date.now(),
-            userId: message.userId,
-            nickname: message.from || message.nickname || '알 수 없는 사용자',
-            message: message.message || message.content || '',
-            sendAt: message.sendAt || new Date().toISOString()
-        };
+        // 현재 사용자가 보낸 메시지인지 확인
+        if (message.isLocalMessage || parseInt(message.userId) === parseInt(userInfo.id)) {
+            console.log('Ignoring own message:', message);
+            return;
+        }
 
-        // 중복 메시지 방지
         setMessages(prevMessages => {
-            // 로컬 메시지 ID (local-*)로 시작하는 임시 메시지 대체
-            const isLocalMessage = prevMessages.some(msg =>
-                msg.chatMsgId?.toString().startsWith('local-') &&
-                msg.message === newMessage.message &&
-                msg.userId === newMessage.userId
+            // 중복 메시지 확인
+            const isDuplicate = prevMessages.some(msg => 
+                msg.chatMsgId === message.id ||
+                (msg.message === message.message &&
+                 parseInt(msg.userId) === parseInt(message.userId) &&
+                 Math.abs(new Date(msg.sendAt) - new Date(message.sendAt)) < 1000)
             );
 
-            let updatedMessages;
-            if (isLocalMessage) {
-                // 임시 메시지를 서버 메시지로 대체
-                updatedMessages = prevMessages.map(msg =>
-                    (msg.chatMsgId?.toString().startsWith('local-') &&
-                        msg.message === newMessage.message &&
-                        msg.userId === newMessage.userId)
-                        ? newMessage
-                        : msg
-                );
-            } else {
-                // 이미 동일한 ID의 메시지가 있는지 확인
-                const exists = prevMessages.some(msg =>
-                    msg.chatMsgId === newMessage.chatMsgId &&
-                    !msg.chatMsgId?.toString().startsWith('local-')
-                );
-
-                if (exists) return prevMessages;
-                updatedMessages = [...prevMessages, newMessage];
+            if (isDuplicate) {
+                console.log('Duplicate message ignored:', message);
+                return prevMessages;
             }
 
-            // 로컬 스토리지에 업데이트된 메시지 저장
-            saveChatMessages(roomId, updatedMessages);
+            const newMessage = {
+                chatMsgId: message.id || Date.now(),
+                userId: parseInt(message.userId),
+                nickname: message.nickname || message.from || '알 수 없는 사용자',
+                message: message.message,
+                sendAt: message.sendAt || new Date().toISOString()
+            };
 
+            const updatedMessages = [...prevMessages, newMessage];
+            saveChatMessages(roomId, updatedMessages);
             return updatedMessages;
         });
     };
