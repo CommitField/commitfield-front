@@ -286,20 +286,36 @@ const ChatService = {
 
   sendMessage: async (roomId, message) => {
     try {
-      if (!roomId || !message) {
+      if (!roomId || !message?.trim()) {
         throw new Error('채팅방 ID와 메시지 내용은 필수입니다.');
       }
 
-      if (message.trim() === '') {
-        throw new Error('메시지 내용은 비어있을 수 없습니다.');
+      // 사용자 정보 가져오기
+      const userResponse = await apiClient.get('/api/user/chatinfo');
+      console.log('User info:', userResponse);
+
+      if (!userResponse || !userResponse.username) {
+        throw new Error('사용자 정보를 찾을 수 없습니다.');
       }
 
-      console.log('Sending message to room', roomId, ':', message);
-      const response = await apiClient.post(`/chat/msg/${roomId}`, { message });
-      console.log('Send message response:', response);
-      return response;
+      // HTTP API를 통해 메시지 저장
+      const response = await apiClient.post(`/chat/msg/${roomId}`, {
+        message: message.trim()
+      });
+
+      if (!response.success) {
+        throw new Error('메시지 저장 실패');
+      }
+
+      return {
+        ...response,
+        userData: {
+          id: userResponse.username,
+          nickname: userResponse.nickname || userResponse.username
+        }
+      };
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Message send error:', error);
       throw error;
     }
   },

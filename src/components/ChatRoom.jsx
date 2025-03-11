@@ -4,6 +4,9 @@ import ChatService from '../services/ChatService';
 import webSocketService from '../services/WebSocketService';
 import './ChatStyles.css';
 
+// Define API_BACKEND_URL
+const API_BACKEND_URL = 'http://localhost:8090';
+
 const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
     const { roomId: paramRoomId } = useParams();
     const roomId = propRoomId || paramRoomId; // 속성으로 받은 값 우선, 없으면 URL 파라미터 사용
@@ -153,79 +156,59 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
 
         if (!newMessage.trim()) return;
 
-        // 먼저 입력 필드 초기화 (UX 향상)
         const messageText = newMessage;
         setNewMessage('');
 
-        // 새 메시지 객체 생성
-        const newMsg = {
-            chatMsgId: `local-${Date.now()}`, // 로컬 메시지 ID
-            userId: userInfo.id,
-            nickname: userInfo.nickname,
-            message: messageText,
-            sendAt: new Date().toISOString()
-        };
-
-        // 메시지 목록에 바로 추가 (낙관적 UI 업데이트)
-        const updatedMessages = [...messages, newMsg];
-        setMessages(updatedMessages);
-
-        // 로컬 스토리지에 메시지 저장
-        saveChatMessages(roomId, updatedMessages);
-
-        // 메시지 전송 시도 
         try {
-            // 1. 웹소켓으로 먼저 시도
+            // 현재 사용자 정보 가져오기
+            const userResponse = await fetch(`${API_BACKEND_URL}/api/user/chatinfo`, {
+                credentials: 'include'
+            });
+            const userData = await userResponse.json();
+
+            if (!userData || !userData.username) {
+                throw new Error('사용자 정보를 가져올 수 없습니다.');
+            }
+
+            // 새 메시지 객체 생성
+            const newMsg = {
+                chatMsgId: `local-${Date.now()}`,
+                userId: userData.username,
+                nickname: userData.nickname || userData.username,
+                message: messageText,
+                sendAt: new Date().toISOString()
+            };
+
+            // 메시지 목록에 바로 추가 (낙관적 UI 업데이트)
+            setMessages(prev => [...prev, newMsg]);
+
+            // 웹소켓으로 메시지 전송
             const wsSuccess = await webSocketService.sendMessage(
                 roomIdInt,
                 messageText,
-                userInfo.id,
-                userInfo.nickname
+                userData.username,
+                userData.nickname || userData.username
             );
 
-            console.log('Message sent via WebSocket, success:', wsSuccess);
-
-            // 2. 웹소켓 실패 시 REST API로 시도
             if (!wsSuccess) {
-                console.log('WebSocket send failed, trying REST API');
-                try {
-                    const response = await ChatService.sendMessage(roomId, messageText);
-                    if (!response || !response.success) {
-                        console.error('API message send failed:', response);
-                        throw new Error(response?.message || '메시지 전송에 실패했습니다.');
-                    }
-                } catch (apiErr) {
-                    console.error('REST API send failed:', apiErr);
-                    // 실패 알림 표시 (기존 메시지는 유지)
-                    const failedMessages = messages.map(msg =>
-                        msg.chatMsgId === newMsg.chatMsgId
-                            ? { ...msg, failed: true, failReason: '전송 실패' }
-                            : msg
-                    );
-                    setMessages(failedMessages);
-
-                    // Update localStorage with failed status
-                    saveChatMessages(roomId, failedMessages);
-
-                    // 사용자에게 알림
-                    alert(apiErr.message || '메시지 전송에 실패했습니다.');
+                // 웹소켓 전송 실패 시 REST API로 시도
+                const response = await ChatService.sendMessage(roomId, messageText);
+                if (!response.success) {
+                    throw new Error('메시지 전송 실패');
                 }
             }
         } catch (err) {
-            console.error('Error in message send flow:', err);
-            // 실패 표시 추가
-            const failedMessages = messages.map(msg =>
-                msg.chatMsgId === newMsg.chatMsgId
-                    ? { ...msg, failed: true, failReason: '전송 실패' }
-                    : msg
+            console.error('Error sending message:', err);
+            alert(err.message || '메시지 전송에 실패했습니다.');
+            
+            // 실패한 메시지 표시
+            setMessages(prev => 
+                prev.map(msg => 
+                    msg.chatMsgId === `local-${Date.now()}` 
+                        ? { ...msg, failed: true, failReason: '전송 실패' } 
+                        : msg
+                )
             );
-            setMessages(failedMessages);
-
-            // Update localStorage with failed status
-            saveChatMessages(roomId, failedMessages);
-
-            // 사용자에게 알림
-            alert('메시지 전송에 실패했습니다.');
         }
     };
 
@@ -299,31 +282,25 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
     };
 
     // 현재 로그인한 사용자 정보 가져오기
-    const getCurrentUser = () => {
-        // 이 부분은 실제 애플리케이션에서 로그인한 사용자 정보를 가져오는 방식에 따라 다를 수 있음
-        // OAuth2 사용자 정보 가져오기 (localStorage나 sessionStorage에서)
-        const userInfoStr = localStorage.getItem('userInfo');
-        if (userInfoStr) {
-            try {
-                const user = JSON.parse(userInfoStr);
-                setUserInfo({
-                    id: user.id,
-                    nickname: user.nickname || '사용자'
-                });
-            } catch (err) {
-                console.error('Error parsing user info:', err);
-                // 기본값 설정
-                setUserInfo({
-                    id: 1, // 테스트용 임시 ID
-                    nickname: '사용자'
-                });
-            }
-        } else {
-            // 사용자 정보가 없으면 기본값 설정
-            setUserInfo({
-                id: 1, // 테스트용 임시 ID
-                nickname: '사용자'
+    const getCurrentUser = async () => {
+        try {
+            const response = await fetch(`${API_BACKEND_URL}/api/user/chatinfo`, {
+                credentials: 'include'
             });
+            const userData = await response.json();
+
+            if (!userData || !userData.username) {
+                throw new Error('사용자 정보를 가져올 수 없습니다.');
+            }
+
+            setUserInfo({
+                id: userData.username,
+                nickname: userData.nickname || userData.username
+            });
+        } catch (err) {
+            console.error('Failed to get current user:', err);
+            alert('사용자 정보를 가져올 수 없습니다. 로그인 페이지로 이동합니다.');
+            navigate('/', { replace: true });
         }
     };
 

@@ -320,45 +320,41 @@ class WebSocketService {
 
   // 메시지 전송 메서드
   async sendMessage(roomId, message, userId, nickname) {
-    // Validate inputs
-    if (!roomId || !message || !userId) {
-      console.error('Missing required fields for sending message:', { roomId, message, userId });
-      return false;
-    }
-
-    // Ensure roomId is a number
-    const roomIdNum = parseInt(roomId);
-
     try {
-      // 연결 확인 및 필요시 연결
-      if (!this.isConnected) {
-        try {
-          await this.connect();
-        } catch (err) {
-          console.warn('Failed to connect WebSocket for sending message:', err);
-          return false;
-        }
+      if (!roomId || !message) {
+        console.error('Missing required fields for sending message:', { roomId, message });
+        return false;
+      }
+
+      // 사용자 정보 가져오기
+      const userResponse = await fetch(`${API_BACKEND_URL}/api/user/chatinfo`, {
+        credentials: 'include'
+      });
+      const userData = await userResponse.json();
+
+      if (!userData || !userData.id) {
+        console.error('Failed to get user info');
+        return false;
       }
 
       const chatMessage = {
         type: 'CHAT',
-        roomId: roomIdNum,
-        userId: userId,
-        from: nickname || '사용자',
+        roomId: parseInt(roomId),
+        userId: userData.id,
+        from: userData.nickname,
+        username: userData.username,
+        email: userData.email,
         message: message,
         sendAt: new Date().toISOString()
       };
 
-      console.log('Sending message:', chatMessage);
+      console.log('Sending message with user info:', chatMessage);
 
-      // WebSocket connected, send the message
-      if (this.isConnected && this.webSocket && this.webSocket.readyState === WebSocket.OPEN) {
+      if (this.isConnected && this.webSocket?.readyState === WebSocket.OPEN) {
         this.webSocket.send(JSON.stringify(chatMessage));
         return true;
       } else {
-        // Queue the message for when the connection is established
         this.pendingMessages.push(chatMessage);
-        console.log('WebSocket not ready, queuing message');
         return false;
       }
     } catch (error) {
