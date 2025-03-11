@@ -1,0 +1,83 @@
+/* 전체 배경 설정 */
+body {
+  background-color: rgb(63, 178, 127);
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* 펫이 움직이는 공간 */
+.pets-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+}
+
+.pets-container {
+  position: relative;
+  width: 800px;
+  height: 500px;
+  background-color: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* 펫을 감싸는 div */
+.pet-wrapper {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+}
+
+/* 알이 0.8배~1배로 커졌다 작아지는 효과 */
+.pet-egg {
+  width: 100px;
+  height: 100px;
+  animation: egg-bounce 1.5s infinite ease-in-out alternate;
+}
+
+@keyframes egg-bounce {
+  0% {
+    transform: scaleY(0.7);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+.pets-wrapper {
+  position: relative;  /* 하위 요소들이 절대적으로 위치할 수 있도록 설정 */
+}
+
+.pets-container {
+  position: relative;
+}
+
+.home-button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;  /* 위쪽에 간격 추가 */
+  position: absolute;
+  bottom: 10px;  /* 버튼을 하단에 고정 */
+  width: 100%;  /* 버튼이 가로로 꽉 차도록 설정 */
+}
+
+.home-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s;
+  color:#111111;
+}
+
+.home-button:hover {
+  background-color: #f0f0f0;
+}
