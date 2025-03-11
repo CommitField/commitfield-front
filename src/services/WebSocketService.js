@@ -326,13 +326,12 @@ class WebSocketService {
         return false;
       }
 
-      // 사용자 정보 가져오기
       const userResponse = await fetch(`${API_BACKEND_URL}/api/user/chatinfo`, {
         credentials: 'include'
       });
       const userData = await userResponse.json();
 
-      if (!userData || !userData.id) {
+      if (!userData) {
         console.error('Failed to get user info');
         return false;
       }
@@ -340,12 +339,12 @@ class WebSocketService {
       const chatMessage = {
         type: 'CHAT',
         roomId: parseInt(roomId),
-        userId: userData.id,
-        from: userData.nickname,
-        username: userData.username,
-        email: userData.email,
+        userId: parseInt(userData.id), // userId를 숫자로 변환
+        nickname: userData.username,
+        from: userData.username,
         message: message,
-        sendAt: new Date().toISOString()
+        sendAt: new Date().toISOString(),
+        isLocalMessage: true // 로컬에서 보낸 메시지 표시
       };
 
       console.log('Sending message with user info:', chatMessage);
