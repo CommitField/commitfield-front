@@ -33,7 +33,7 @@ const Pets = () => {
 const Pet = ({ src }) => {
   const getRandomPosition = () => ({
     x: Math.random() * 600 + 100,
-    y: Math.random() * 400 + 100,
+    y: Math.random() * 200 + 200,
   });
 
   const [position, setPosition] = useState(getRandomPosition());
