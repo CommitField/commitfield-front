@@ -168,26 +168,15 @@ useEffect(() => {
       newClient.subscribe(`/topic/notifications/${userInfo.username}`, (message) => {
         const notifications = JSON.parse(message.body);
 
-        // 배열인 경우 처리
-        if (Array.isArray(notifications)) {
-          // 각 알림을 상태에 추가
-          notifications.forEach(notification => {
-            setNotifications(prev => [{
-              id: notification.id,
-              message: notification.message,
-              createdAt: notification.formattedCreatedAt,
-              read: false
-            }, ...prev]);
-          });
-        } else {
-          // 단일 알림인 경우
+        // 각 알림을 상태에 추가
+        notifications.forEach(notification => {
           setNotifications(prev => [{
-            id: notifications.id,
-            message: notifications.message,
-            createdAt: notifications.formattedCreatedAt,
+            id: notification.id,
+            message: notification.message,
+            formattedCreatedAt: notification.formattedCreatedAt,
             read: false
           }, ...prev]);
-        }
+        });
         
         // 새 알림 표시
         setHasNewNotification(true);
