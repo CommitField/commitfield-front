@@ -592,7 +592,7 @@
     flex-direction: row-reverse;
     margin-right: 400px; /* 오른쪽으로 40px 여백 */
     position: relative; /* 위치 상대값 설정 */
-    right: -250px; /* 오른쪽으로 20px 더 이동 */
+    right: -2px; /* 오른쪽으로 20px 더 이동 */
 }
 
 .message.sent .content {
@@ -786,12 +786,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 5px; /* 아이콘과 텍스트 사이 간격 */
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     flex-shrink: 0;
 }
 
 .chat-input .send-btn i {
-    margin-right: 10px;
+    margin-right: 0; /* 기존 마진 제거 */
     font-size: 16px;
 }
 
