@@ -81,3 +81,12 @@ body {
 .home-button:hover {
   background-color: #f0f0f0;
 }
+
+.heart {
+  position: absolute;
+  font-size: 24px;
+  color: red;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
