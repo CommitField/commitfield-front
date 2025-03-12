@@ -675,7 +675,10 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
                                                 )}
                                             </div>
                                             <span className="participant-name">{user.nickname || '알 수 없는 사용자'}</span>
-                                            {user.status && <span className="online-status" title="온라인"></span>}
+                                            <span 
+                                                className={`online-status ${user.status ? 'online' : 'offline'}`}
+                                                title={user.status ? '온라인' : '오프라인'}
+                                            ></span>
                                         </li>
                                     ))}
                                 </ul>
@@ -684,7 +687,7 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
                     </div>
                 </div>
             )}
-
+            {/* 채팅 */}
             {/* 채팅 메시지 영역 */}
             {loading && messages.length === 0 ? (
                 <div className="loading">
