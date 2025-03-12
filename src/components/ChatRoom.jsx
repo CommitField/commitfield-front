@@ -687,7 +687,7 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
                     </div>
                 </div>
             )}
-
+            {/* 채팅 */}
             {/* 채팅 메시지 영역 */}
             {loading && messages.length === 0 ? (
                 <div className="loading">
