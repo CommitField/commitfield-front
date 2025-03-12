@@ -25,7 +25,7 @@ body {
   background-color: white;
   border-radius: 10px;
   overflow: hidden;
-  background-image: url('/pets/PET_BACK_5.png');
+  background-image: url('/pets/PET_BACK_6.png');
   background-size: 800px auto; /* 가로 1000px, 세로는 비율 유지 */
   background-repeat: no-repeat; /* 배경 반복 제거 */
   background-position: center; /* 가운데 정렬 */
