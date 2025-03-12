@@ -40,8 +40,9 @@ const Profile = ({ userInfo }) => {
   // 새 펫 받기 버튼 클릭 핸들러
 const handleGetNewPet = async () => {
   try {
-    const response = await fetch("/api/pet/new", {
+    const response = await fetch("/api/pets/new", {
       method: "POST",
+      credentials: 'include',
       headers: {
         "Content-Type": "application/json",
       },
