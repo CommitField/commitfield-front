@@ -1485,6 +1485,13 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background-color: #2ecc71;
     margin-left: 10px;
+}
+
+.online-status.online {
+    background-color: #2ecc71;  /* 온라인 상태 - 초록색 */
+}
+
+.online-status.offline {
+    background-color: #f04046ad;  /* 오프라인 상태 - 회색 */
 }
