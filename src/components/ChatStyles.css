@@ -542,13 +542,13 @@
     cursor: not-allowed;
 }
 
-/* 채팅 상단 버튼 그룹 */
+/* 채팅 상단 버튼 그룹 수정 */
 .chat-action-buttons {
     position: absolute;
-    top: 15px;
+    top: 10px; /* 15px에서 10px로 변경 */
     right: 20px;
     display: flex;
-    gap: 10px;
+    gap: 5px; /* 10px에서 5px로 간격 줄임 */
     z-index: 10;
 }
 
@@ -1120,5 +1120,60 @@
         top: 70px;
         right: 10px;
         flex-wrap: wrap;
+    }
+}
+
+/* 채팅방 생성 버튼만 따로 스타일링 */
+.create-room-btn {
+    position: fixed;
+    left: 170px; /* 150px에서 20px 증가 */
+    bottom: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: var(--primary-green);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    transition: transform 0.2s;
+    font-size: 20px; /* + 기호 크기를 더 크게 조정 */
+}
+
+.create-room-btn::before {
+    content: "+";
+    line-height: 0.8; /* 수직 정렬 조정 */
+}
+
+.create-room-btn *:not(::before) {
+    display: none; /* ::before를 제외한 모든 요소 숨김 */
+}
+
+/* 새로고침/홈 버튼 스타일 수정 */
+.refresh-btn,
+.home-btn {
+    position: static;
+    padding: 6px 12px; /* 패딩 살짝 줄임 */
+    margin: 5px; /* 마진 줄임 */
+    border-radius: 20px;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px; /* 아이콘과 텍스트 사이 간격 줄임 */
+}
+
+/* 반응형 디자인에서 생성 버튼 위치 조정 */
+@media (max-width: 768px) {
+    .create-room-btn {
+        left: 130px; /* 110px에서 20px 증가 */
+    }
+}
+
+@media (max-width: 576px) {
+    .create-room-btn {
+        left: 70px; /* 50px에서 20px 증가 */
     }
 }
