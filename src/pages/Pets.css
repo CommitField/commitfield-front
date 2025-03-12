@@ -35,8 +35,8 @@ body {
 
 /* 알이 0.8배~1배로 커졌다 작아지는 효과 */
 .pet-egg {
-  width: 100px;
-  height: 100px;
+  width: 90px;
+  height: 90px;
   animation: egg-bounce 1.5s infinite ease-in-out alternate;
 }
 
@@ -80,4 +80,13 @@ body {
 
 .home-button:hover {
   background-color: #f0f0f0;
+}
+
+.heart {
+  position: absolute;
+  font-size: 24px;
+  color: red;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
 }

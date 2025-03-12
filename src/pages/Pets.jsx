@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";  // React Router 사용
+import { useNavigate } from "react-router-dom";
 import "./Pets.css";
 
 const Pets = () => {
   const [pets, setPets] = useState([]);
-  const navigate = useNavigate(); // 홈으로 돌아가기 함수
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch("/api/pets/getall")
@@ -21,7 +21,6 @@ const Pets = () => {
         ))}
       </div>
 
-      {/* 홈으로 돌아가기 버튼 추가 */}
       <div className="home-button-container">
         <button className="home-button" onClick={() => navigate("/home")}>
           홈으로 돌아가기
@@ -33,20 +32,26 @@ const Pets = () => {
 
 const Pet = ({ src }) => {
   const getRandomPosition = () => ({
-    x: Math.random() * 600 + 100, // 100 ~ 700 사이 랜덤 X 좌표
-    y: Math.random() * 400 + 100, // 100 ~ 500 사이 랜덤 Y 좌표
+    x: Math.random() * 600 + 100,
+    y: Math.random() * 400 + 100,
   });
 
   const [position, setPosition] = useState(getRandomPosition());
+  const [showHeart, setShowHeart] = useState(false);
 
   useEffect(() => {
     const movePet = () => {
       setPosition(getRandomPosition());
     };
 
-    const interval = setInterval(movePet, 3000);
+    const interval = setInterval(movePet, Math.random() * 5000 + 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const handlePetClick = () => {
+    setShowHeart(true);
+    setTimeout(() => setShowHeart(false), 1000); // 1초 후 사라지게 설정
+  };
 
   return (
     <motion.div
@@ -54,8 +59,21 @@ const Pet = ({ src }) => {
       initial={{ x: position.x, y: position.y }}
       animate={{ x: position.x, y: position.y }}
       transition={{ duration: 1.5, ease: "easeInOut" }}
+      onClick={handlePetClick}
     >
       <img className="pet-egg" src={src} alt="Pet" />
+
+      {/* ❤️ 하트 애니메이션 */}
+      {showHeart && (
+        <motion.div
+          className="heart"
+          initial={{ opacity: 1, y: -60 }}
+          animate={{ opacity: 0, y: -120 }}
+          transition={{ duration: 1, ease: "easeOut" }}
+        >
+          ❤️
+        </motion.div>
+      )}
     </motion.div>
   );
 };

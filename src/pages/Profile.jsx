@@ -13,7 +13,7 @@ const Profile = ({ userInfo }) => {
   const refreshTimerRef = useRef(null);
 
   //FIXME: 테스트를 위해 수치 줄임. 차후 150/300으로 변경 필요.
-  const maxExp = userInfo.petGrow === "EGG" ? 20 : userInfo.petGrow === "HATCH" ? 40 : 40;
+  const maxExp = userInfo.petGrow === "EGG" ? 5 : userInfo.petGrow === "HATCH" ? 10 : 10;
 
   // 티어 아이콘 매핑
   const tierEmojis = {
@@ -38,9 +38,27 @@ const Profile = ({ userInfo }) => {
   const navigate = useNavigate(); // 페이지 이동 함수
 
   // 새 펫 받기 버튼 클릭 핸들러
-  const handleGetNewPet = () => {
-    alert("새 펫을 받는 기능은 아직 구현되지 않았습니다! 🐣");
-  };
+const handleGetNewPet = async () => {
+  try {
+    const response = await fetch("/api/pets/new", {
+      method: "POST",
+      credentials: 'include',
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("새 펫을 받을 수 없습니다.");
+    }
+
+    alert("새 펫을 성공적으로 받았습니다! 🎉");
+    window.location.reload(); // 페이지 새로고침
+  } catch (error) {
+    console.error("에러 발생:", error);
+    alert("펫을 받는 데 실패했습니다. 다시 시도해주세요.");
+  }
+};
 
   // 프로필 정보 자동 새로고침 함수
   const refreshProfileData = async () => {
@@ -108,6 +126,10 @@ const Profile = ({ userInfo }) => {
   };
 
   useEffect(() => {
+    refreshProfileData();
+  }, [userInfo.tier, userInfo.petGrow]); // tier 또는 petGrow 값이 변경될 때 실행
+
+  useEffect(() => {
     // userInfo.username이 없으면 WebSocket 연결 안 함
     if (!userInfo.username) {
       console.log("Username is not available yet, waiting...");
@@ -142,6 +164,7 @@ const Profile = ({ userInfo }) => {
     }, (error) => {
       console.error("WebSocket error:", error);
     });
+
 
     // WebSocket 클라이언트 저장
     setClient(newClient);
@@ -249,14 +272,18 @@ const Profile = ({ userInfo }) => {
         </div>
       </div>
       {/* 🆕 추가된 버튼 섹션 */}
-              <div className="button-section">
-                <button className="get-new-pet-btn" onClick={handleGetNewPet}>
-                  🐣 새 펫 받기
-                </button>
-                <button className="view-pets-btn" onClick={() => navigate("/pets")}>
-                  🏡 펫 보러가기
-                </button>
-              </div>
+      <div className="button-section">
+        <button
+          className="get-new-pet-btn"
+          onClick={handleGetNewPet}
+          disabled={userInfo.petGrow !== "GROWN"}  // GROWN이 아닐 때 비활성화
+        >
+          🐣 새 펫 받기
+        </button>
+        <button className="view-pets-btn" onClick={() => navigate("/pets")}>
+          🏡 펫 보러가기
+        </button>
+      </div>
     </div>
   );
 };

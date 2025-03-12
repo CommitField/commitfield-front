@@ -352,3 +352,8 @@ h2 {
   color: rgb(63, 178, 127);
   transform: scale(1.05);
 }
+.get-new-pet-btn:disabled {
+  background-color: #f0f0f0; /* 비활성화된 버튼의 배경색 */
+  cursor: not-allowed; /* 비활성화된 버튼의 커서 */
+  border: 1px solid #ccc; /* 비활성화된 버튼의 테두리 */
+}
