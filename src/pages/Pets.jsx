@@ -69,7 +69,6 @@ const Pet = ({ src }) => {
           className="heart"
           initial={{ opacity: 1, y: -60 }}
           animate={{ opacity: 0, y: -120 }}
-          animate={{ opacity: 0, y: -120 }}
           transition={{ duration: 1, ease: "easeOut" }}
         >
           ❤️
