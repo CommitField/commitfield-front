@@ -44,7 +44,7 @@ const Pet = ({ src }) => {
       setPosition(getRandomPosition());
     };
 
-    const interval = setInterval(movePet, 3000);
+    const interval = setInterval(movePet, Math.random() * 5000 + 1000);
     return () => clearInterval(interval);
   }, []);
 
