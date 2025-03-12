@@ -38,9 +38,26 @@ const Profile = ({ userInfo }) => {
   const navigate = useNavigate(); // 페이지 이동 함수
 
   // 새 펫 받기 버튼 클릭 핸들러
-  const handleGetNewPet = () => {
-    alert("새 펫을 받는 기능은 아직 구현되지 않았습니다! 🐣");
-  };
+const handleGetNewPet = async () => {
+  try {
+    const response = await fetch("/api/pet/new", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("새 펫을 받을 수 없습니다.");
+    }
+
+    alert("새 펫을 성공적으로 받았습니다! 🎉");
+    window.location.reload(); // 페이지 새로고침
+  } catch (error) {
+    console.error("에러 발생:", error);
+    alert("펫을 받는 데 실패했습니다. 다시 시도해주세요.");
+  }
+};
 
   // 프로필 정보 자동 새로고침 함수
   const refreshProfileData = async () => {
