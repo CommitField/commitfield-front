@@ -32,6 +32,9 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
     const [wsConnectionRetries, setWsConnectionRetries] = useState(0);
     const maxWsRetries = 5;
     const prevRoomIdRef = useRef(null);
+    const [showParticipants, setShowParticipants] = useState(false);
+    const [participants, setParticipants] = useState([]);
+    const [loadingParticipants, setLoadingParticipants] = useState(false);
 
     // Cache key for stored messages
     const getChatStorageKey = (roomId) => `chat_messages_${roomId}`;
@@ -568,6 +571,30 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
         return new Date(a) - new Date(b);
     });
 
+    // 참여자 목록 조회 함수 수정
+    const fetchParticipants = async () => {
+        try {
+            setLoadingParticipants(true);
+            const response = await ChatService.getRoomUsers(roomIdInt);
+           
+                setParticipants(response.data);
+            
+        } catch (err) {
+            console.error('Error fetching participants:', err);
+            alert('참여자 목록을 불러오는데 실패했습니다.');
+        } finally {
+            setLoadingParticipants(false);
+        }
+    };
+
+    // 모달 토글 함수
+    const toggleParticipants = () => {
+        if (!showParticipants) {
+            fetchParticipants();
+        }
+        setShowParticipants(!showParticipants);
+    };
+
     return (
         <div className="chat-window">
             {/* 채팅 헤더 */}
@@ -577,6 +604,15 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
 
                     {/* 제목 옆에 삭제/나가기 버튼 배치 */}
                     <div className="header-actions">
+                        {/* 참여자 목록 버튼 추가 */}
+                        <button
+                            className="action-btn"
+                            onClick={toggleParticipants}
+                        >
+                            <i className="fa-solid fa-users"></i>
+                            참여자
+                        </button>
+
                         <button
                             className={`action-btn ${actionInProgress ? 'disabled' : ''}`}
                             onClick={leaveRoom}
@@ -604,6 +640,50 @@ const ChatRoom = ({ roomId: propRoomId, onLeaveRoom, refreshRooms }) => {
                     </div>
                 </div>
             </div>
+
+            {/* 참여자 목록 모달 */}
+            {showParticipants && (
+                <div className="participants-modal" onClick={() => setShowParticipants(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>참여자 목록 ({participants.length}명)</h3>
+                            <button 
+                                onClick={() => setShowParticipants(false)}
+                                className="close-btn"
+                                aria-label="닫기"
+                            >
+                                <i className="fa-solid fa-times"></i>
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            {loadingParticipants ? (
+                                <div className="loading">
+                                    <div className="loading-spinner"></div>
+                                    <span>참여자 목록을 불러오는 중...</span>
+                                </div>
+                            ) : participants.length === 0 ? (
+                                <div className="empty-list">참여자가 없습니다.</div>
+                            ) : (
+                                <ul className="participants-list">
+                                    {participants.map((user, index) => (
+                                        <li key={index} className="participant-item">
+                                            <div className="participant-avatar">
+                                                {user.imageUrl ? (
+                                                    <img src={user.imageUrl} alt={user.nickname} />
+                                                ) : (
+                                                    <i className="fa-solid fa-user"></i>
+                                                )}
+                                            </div>
+                                            <span className="participant-name">{user.nickname || '알 수 없는 사용자'}</span>
+                                            {user.status && <span className="online-status" title="온라인"></span>}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* 채팅 메시지 영역 */}
             {loading && messages.length === 0 ? (
