@@ -126,6 +126,10 @@ const handleGetNewPet = async () => {
   };
 
   useEffect(() => {
+    refreshProfileData();
+  }, [userInfo.tier, userInfo.petGrow]); // tier 또는 petGrow 값이 변경될 때 실행
+
+  useEffect(() => {
     // userInfo.username이 없으면 WebSocket 연결 안 함
     if (!userInfo.username) {
       console.log("Username is not available yet, waiting...");
@@ -160,6 +164,7 @@ const handleGetNewPet = async () => {
     }, (error) => {
       console.error("WebSocket error:", error);
     });
+
 
     // WebSocket 클라이언트 저장
     setClient(newClient);
