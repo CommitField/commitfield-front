@@ -272,7 +272,7 @@ const ChatRoomList = () => {
         } catch {
             return '/default-room.png';
         }
-
+    };
 
     return (
         <div className="chat-layout">
