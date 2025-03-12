@@ -427,6 +427,21 @@ const ChatService = {
 
     // 캐시 변경 이벤트 발생
     localStorage.setItem('chatRoomChanged', Date.now().toString());
+  },
+
+  async getRoomUsers(roomId) {
+    try {
+      const response = await fetch(`http://localhost:8090/chat/room/users/${roomId}`, {
+        credentials: 'include',  // 쿠키를 포함하여 요청
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    return await response.json();
+    } catch (error) {
+        console.error('Failed to fetch room users:', error);
+        throw error;
+    }
   }
 };
 

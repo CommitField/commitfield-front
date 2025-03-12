@@ -287,7 +287,7 @@ const ChatRoomList = () => {
                         <i className="fa-solid fa-arrows-rotate"></i>새로고침
                     </div>
                     <div className="create-room-btn" onClick={handleCreateRoom}>
-                        <i className="fa-solid fa-plus"></i>생성
+                        <i className="fa-solid fa-plus"></i>
                     </div>
                 </div>
 
