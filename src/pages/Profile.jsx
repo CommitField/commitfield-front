@@ -13,7 +13,7 @@ const Profile = ({ userInfo }) => {
   const refreshTimerRef = useRef(null);
 
   //FIXME: 테스트를 위해 수치 줄임. 차후 150/300으로 변경 필요.
-  const maxExp = userInfo.petGrow === "EGG" ? 20 : userInfo.petGrow === "HATCH" ? 40 : 40;
+  const maxExp = userInfo.petGrow === "EGG" ? 10 : userInfo.petGrow === "HATCH" ? 15 : 15;
 
   // 티어 아이콘 매핑
   const tierEmojis = {
