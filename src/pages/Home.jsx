@@ -444,7 +444,7 @@ useEffect(() => {
           <table className="season-table">
             <thead>
               <tr>
-                <th className="table-header">현재 시즌 (봄)</th>
+                <th className="table-header">현재 시즌</th>
                 <th className="table-header table-header-center">총 커밋</th>
                 <th className="table-header table-header-center">공개 커밋</th>
                 <th className="table-header table-header-center">비공개 커밋</th>
@@ -458,7 +458,7 @@ useEffect(() => {
                   <td className="table-cell">
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       {getSeasonIcon("spring")}
-                      <span style={{ marginLeft: '8px', color: '#333' }}>봄 시즌</span>
+                      <span style={{ marginLeft: '8px', color: '#333' }}>2025 봄 시즌</span>
                     </div>
                   </td>
                   <td className="table-cell table-cell-center" style={{ fontWeight: 'bold', color: '#333' }}>
@@ -509,7 +509,7 @@ useEffect(() => {
                     <td className="table-cell">
                       <div style={{ display: 'flex', alignItems: 'center' }}>
                         {getSeasonIcon(season)}
-                        <span style={{ marginLeft: '8px', color: '#333' }}>{getSeasonName(season)} 시즌</span>
+                        <span style={{ marginLeft: '8px', color: '#333' }}>2025 {getSeasonName(season)} 시즌</span>
                       </div>
                     </td>
                     <td className="table-cell table-cell-center" style={{ fontWeight: 'bold', color: '#333' }}>
