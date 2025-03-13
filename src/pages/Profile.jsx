@@ -59,7 +59,6 @@ const handleGetNewPet = async () => {
     alert("펫을 받는 데 실패했습니다. 다시 시도해주세요.");
   }
 };
-
   // 프로필 정보 자동 새로고침 함수
   const refreshProfileData = async () => {
     setIsRefreshing(true);
@@ -87,17 +86,23 @@ const handleGetNewPet = async () => {
     }
   };
 
-  // 자동 새로고침 설정 (30초마다)
-  useEffect(() => {
-    refreshTimerRef.current = setInterval(refreshProfileData, 30000);
+  const [levelUpNotified, setLevelUpNotified] = useState(
+    JSON.parse(localStorage.getItem("levelUpNotified")) || {}
+  );
 
-    // 컴포넌트 언마운트 시 타이머 정리
-    return () => {
-      if (refreshTimerRef.current) {
-        clearInterval(refreshTimerRef.current);
-      }
-    };
-  }, []);
+  useEffect(() => {
+    if ((petExp === 5 || petExp === 10) && !levelUpNotified[petExp]) {
+      alert("🎉 축하합니다! 펫이 레벨업하였습니다! 🎉");
+
+      const updatedNotified = { ...levelUpNotified, [petExp]: true };
+      setLevelUpNotified(updatedNotified);
+      localStorage.setItem("levelUpNotified", JSON.stringify(updatedNotified)); // 현재 petExp 기록
+
+      window.location.reload(); // 페이지 새로고침
+    }
+  }, [petExp, levelUpNotified]);
+
+
 
   // userInfo가 변경되면 값 업데이트
   useEffect(() => {
